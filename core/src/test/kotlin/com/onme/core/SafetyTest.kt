@@ -39,12 +39,12 @@ class SafetyTest {
     @Test fun `UI5 snoozed card stays hidden for 24h`() {
         val now = Instant.parse("2026-11-04T00:00:00Z")
         val u = UserData(consents = Consents(proactiveCards = true))
-        assertTrue(Cards.canShow(u, Cards.TR1, now, shownThisDrive = 0))
-        val snoozed = Cards.snooze(u, Cards.TR1, now)
-        assertTrue(!Cards.canShow(snoozed, Cards.TR1, now.plusSeconds(23 * 3600), 0))
-        assertTrue(Cards.canShow(snoozed, Cards.TR1, now.plusSeconds(24 * 3600), 0))
+        assertTrue(Cards.canShow(u, Cards.TR2, now, shownThisDrive = 0))
+        val snoozed = Cards.snooze(u, Cards.TR2, now)
+        assertTrue(!Cards.canShow(snoozed, Cards.TR2, now.plusSeconds(23 * 3600), 0))
+        assertTrue(Cards.canShow(snoozed, Cards.TR2, now.plusSeconds(24 * 3600), 0))
         assertTrue(!Cards.canShow(u, Cards.TR2, now, shownThisDrive = 2))
-        assertTrue(!Cards.canShow(UserData(), Cards.TR1, now, 0))
+        assertTrue(!Cards.canShow(UserData(), Cards.TR2, now, 0))
     }
 
     @Test fun `TR2 long drive threshold follows Q7`() {

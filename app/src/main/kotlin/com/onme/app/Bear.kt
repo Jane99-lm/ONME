@@ -27,12 +27,15 @@ private const val BALL_X = 512f
 private const val BALL_Y = 770f
 private const val BALL_R = 178f
 
-private const val BALL = """
+internal const val BALL = """
 uniform float2 c;
 uniform float r;
 uniform float t;
 uniform float3 deep;
 uniform float3 milky;
+uniform float opacity;
+uniform float grain;
+uniform float vein;
 
 float hash(float3 p) { return fract(sin(dot(p, float3(127.1, 311.7, 74.7))) * 43758.5453); }
 float noise(float3 p) {
@@ -46,13 +49,14 @@ half4 main(float2 fc) {
     float2 p = (fc - c) / r;
     float d = length(p);
     if (d > 1.0) return half4(0.0);
-    float marble = fbm(float3(p * 1.6, 0.05 * t));
-    float3 col = mix(deep, milky, exp(-d * d * 2.2) * (0.75 + 0.25 * sin(0.8 * t)));
+    float marble = fbm(float3(p * grain, 0.05 * t));
+    float3 col = mix(deep, milky, exp(-d * d * 2.2) * (0.92 + 0.08 * sin(0.8 * t)));
     col = mix(col, col * 1.18 + 0.04, smoothstep(0.45, 0.75, marble) * 0.5);
+    col = mix(col, milky * 1.1, vein * pow(1.0 - abs(fbm(float3(p * grain * 0.8 + 4.0, 1.0)) * 2.0 - 1.0), 8.0));
     float spec = exp(-dot(p - float2(-0.38, -0.42), p - float2(-0.38, -0.42)) * 18.0);
     col += spec * 0.35;
     col += pow(d, 5.0) * deep * 0.5;
-    float a = smoothstep(1.0, 0.94, d) * 0.72;
+    float a = smoothstep(1.0, 0.94, d) * mix(opacity, opacity + 0.25, smoothstep(0.6, 1.0, d));
     return half4(half3(col * a), a);
 }
 """
@@ -98,6 +102,9 @@ private fun Ball(animate: Boolean, deep: Color, milky: Color) {
         shader.setFloatUniform("t", time)
         shader.setFloatUniform("deep", deep.red, deep.green, deep.blue)
         shader.setFloatUniform("milky", milky.red, milky.green, milky.blue)
+        shader.setFloatUniform("opacity", 0.66f)
+        shader.setFloatUniform("grain", 1.6f)
+        shader.setFloatUniform("vein", 0f)
         drawRect(brush)
     }
 }

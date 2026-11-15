@@ -115,9 +115,9 @@ fun screenAfter(s: Screen, state: DrivingState) = if (canOpen(s, state)) s else 
 // ---- 9 trigger cards ------------------------------------------------------------------------
 
 object Cards {
-    const val TR1 = "TR1"; const val TR2 = "TR2"; const val TR3 = "TR3"
+    const val TR2 = "TR2"; const val TR3 = "TR3"
 
-    /** D12: snoozed 24h after [나중에]; TR1+TR2 at most 2 per drive; consent required. */
+    /** D12: snoozed 24h after [나중에]; TR2 at most 2 per drive; consent required. */
     fun canShow(u: UserData, id: String, now: Instant, shownThisDrive: Int): Boolean =
         u.consents.proactiveCards &&
             (id == TR3 || shownThisDrive < OnmeConfig.MAX_CARDS_PER_DRIVE) &&
@@ -125,10 +125,6 @@ object Cards {
 
     fun snooze(u: UserData, id: String, now: Instant) =
         u.copy(cardSnoozedUntil = u.cardSnoozedUntil + (id to now.plusSeconds(OnmeConfig.CARD_SNOOZE_HOURS * 3600)))
-
-    /** TR1: before departure, something relevant logged today or a care with C ≥ 60. */
-    fun departure(u: UserData, ctx: CareContext) = ctx.parked &&
-        (todaySymptoms(u, ctx.today).isNotEmpty() || CareId.entries.any { cycleSymptomScore(u, it, ctx.today) >= OnmeConfig.C_EARLY_SIGNAL })
 
     fun longDrive(u: UserData, drivingMinutes: Long) = drivingMinutes >=
         if (u.onboarding?.drivingPattern == DrivingPattern.LONG_DISTANCE) OnmeConfig.LONG_DRIVE_MIN_FREQUENT else OnmeConfig.LONG_DRIVE_MIN

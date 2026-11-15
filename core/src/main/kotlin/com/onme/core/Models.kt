@@ -20,9 +20,13 @@ enum class Phase { P1, P2, P3, P4, P5, OVERDUE, PAUSED }
 enum class Rating { POSITIVE, NEUTRAL, NEGATIVE }
 
 enum class Symptom {
-    ABDOMINAL, LOWER_BACK, HOT_STUFFY, IRRITABLE, HEADACHE, SENSORY_DISCOMFORT,
+    ABDOMINAL, LOWER_BACK, HOT_STUFFY, IRRITABLE, HEADACHE, @Deprecated("removed from the app; kept so old saved logs still load") SENSORY_DISCOMFORT,
     FATIGUE, SLEEPY, LOW_MOOD, HEAVY_FLOW, TOILET_WORRY
 }
+
+@Suppress("DEPRECATION")
+val SYMPTOM_OPTIONS = Symptom.entries - Symptom.SENSORY_DISCOMFORT - Symptom.HEAVY_FLOW
+
 
 enum class CycleBucket { D21_24, D25_28, D29_32, D33_35, D36_PLUS, UNKNOWN }
 enum class Regularity { SAME, FEW_DAYS, VARIES, UNKNOWN }
@@ -33,6 +37,7 @@ enum class DrivingPattern { COMMUTE, LONG_DISTANCE, OCCASIONAL }
 enum class Situation { HORMONAL_PILL, PREGNANT, POSTPARTUM, PERIMENOPAUSE, NONE, NO_ANSWER }
 
 @Serializable data class SymptomLog(val date: LocalDate, val symptom: Symptom, val intensity: Int /*0..3*/)
+@Serializable data class FlowLog(val date: LocalDate, val level: Int /*1 적음, 2 보통, 3 많음*/)
 @Serializable data class PeriodRecord(val start: LocalDate, val end: LocalDate? = null)
 @Serializable data class EarlySignal(val symptom: Symptom, val timing: SignalTiming)
 
@@ -106,6 +111,7 @@ data class UserData(
     val onboarding: OnboardingAnswers? = null,
     val periods: List<PeriodRecord> = emptyList(),
     val symptoms: List<SymptomLog> = emptyList(),
+    val flows: List<FlowLog> = emptyList(),
     val sessions: List<CareSession> = emptyList(),
     val presets: List<ComfortPreset> = emptyList(),
     val consents: Consents = Consents(),

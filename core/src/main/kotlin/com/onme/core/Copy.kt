@@ -46,7 +46,6 @@ object Copy {
     const val RESET_GUIDE = "숨을 천천히 들이쉬고, 더 길게 내쉬어요"
 
     // Trigger cards (9)
-    const val TR1 = "오늘의 케어를 준비할까요?"
     const val TR2 = "쉬어갈 곳을 경로에 추가할까요?"
     const val TR3 = "준비물을 확인해 보세요"
     const val LATER = "나중에"
@@ -123,7 +122,7 @@ object DriveCopy {
         add(Copy.COMFORT_WARM); add(Copy.COMFORT_COOL); add(Copy.GENERAL); add(Copy.APPLIED); add(Copy.REVERT)
         addAll(Copy.MAIN.values); addAll(Copy.CARE_NAME.values); addAll(Copy.MOOD.values); addAll(Copy.GOAL.values)
         Copy.BUTTONS.values.forEach { add(it.first); add(it.second) }
-        add(Copy.REST_DRIVING); add(Copy.TR1); add(Copy.TR2); add(Copy.LATER); add(Copy.OK)
+        add(Copy.REST_DRIVING); add(Copy.TR2); add(Copy.LATER); add(Copy.OK)
         OnmeConfig.PLAYLIST_TAGS.values.forEach { addAll(it.values) }
         OnmeConfig.PLACE_KINDS.values.forEach { addAll(it) }
         add(SosCopy.TITLE); addAll(SosCopy.CATEGORY.values); add(SosCopy.STORE_NOTE); add(SosCopy.NONE)

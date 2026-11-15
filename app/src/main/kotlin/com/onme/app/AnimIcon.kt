@@ -53,7 +53,7 @@ class AnimIcon(val nodes: List<Node>) {
     val length by lazy { nodes.maxOf { it.end } }
 }
 
-private fun DrawScope.draw(n: Node, t: Float, color: Color, alpha: Float) {
+private fun DrawScope.draw(n: Node, t: Float, color: Color, alpha: Float, stroke: Float) {
     var sx = 1f; var sy = 1f; var rot = 0f; var tx = 0f; var ty = 0f; var a = 1f; var off = 0f; var drawn: Float? = null
     n.tracks.forEach {
         val v = it.at(t)
@@ -74,16 +74,16 @@ private fun DrawScope.draw(n: Node, t: Float, color: Color, alpha: Float) {
         n.path?.let { p ->
             val effect = drawn?.let { PathEffect.dashPathEffect(floatArrayOf(n.length, n.length), n.length * (1f - it)) }
                 ?: n.dash?.let { PathEffect.dashPathEffect(if (it.size % 2 == 1) it + it else it, off) }
-            drawPath(p, color, alpha = (a * alpha).coerceIn(0f, 1f), style = Stroke(STROKE, cap = StrokeCap.Round, join = StrokeJoin.Round, pathEffect = effect))
+            drawPath(p, color, alpha = (a * alpha).coerceIn(0f, 1f), style = Stroke(stroke, cap = StrokeCap.Round, join = StrokeJoin.Round, pathEffect = effect))
         }
-        n.kids.forEach { draw(it, t, color, a * alpha) }
+        n.kids.forEach { draw(it, t, color, a * alpha, stroke) }
     }
 }
 
 const val STROKE = 1.6f
 
 @Composable
-fun Glyph(icon: AnimIcon, color: Color, size: Dp = 34.dp, play: Any? = null) {
+fun Glyph(icon: AnimIcon, color: Color, size: Dp = 34.dp, play: Any? = null, stroke: Float = STROKE) {
     val time = remember(icon) { Animatable(icon.length) }
     LaunchedEffect(icon, play) {
         if (play != null && play != false) { time.snapTo(0f); time.animateTo(icon.length, tween((icon.length * 1000).toInt(), easing = LinearEasing)) }
@@ -91,6 +91,6 @@ fun Glyph(icon: AnimIcon, color: Color, size: Dp = 34.dp, play: Any? = null) {
     Canvas(Modifier.size(size)) {
         val k = this.size.minDimension / 24f
         val t = time.value
-        scale(k, k, pivot = Offset.Zero) { icon.nodes.forEach { draw(it, t, color, 1f) } }
+        scale(k, k, pivot = Offset.Zero) { icon.nodes.forEach { draw(it, t, color, 1f, stroke) } }
     }
 }

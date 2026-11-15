@@ -104,6 +104,8 @@ class Onme(private val context: Context) {
     var blocked by mutableStateOf(false)
     var message by mutableStateOf<String?>(null)
 
+    fun back() = go(if (screen == Screen.CONFIRM) Screen.RESULT else Screen.HOME)
+
     fun go(s: Screen) {
         if (s in CYCLE_SCREENS && !user.cycleTracking) return
         if (canOpen(s, driving)) { screen = s; message = null; if (s == Screen.SOS) sosCat?.let { sos(it) } } else blocked = true
@@ -234,7 +236,6 @@ class Onme(private val context: Context) {
         val c = ctx()
         if (c.parked) {
             offer(Cards.TR3, Cards.readyKit(user, c))
-            offer(Cards.TR1, driveStart == null && Cards.departure(user, c))
         } else driveStart?.let { offer(Cards.TR2, Cards.longDrive(user, Duration.between(it, Instant.now()).toMinutes())) }
     }
 
@@ -243,7 +244,6 @@ class Onme(private val context: Context) {
         when (card) {
             Cards.TR2 -> { sos(SosCategory.TOILET); go(Screen.SOS) }
             Cards.TR3 -> message = Copy.READY_KIT_ITEMS
-            else -> go(Screen.HOME)
         }
         card = null
     }
@@ -298,6 +298,12 @@ class Onme(private val context: Context) {
     fun setSymptom(s: Symptom, level: Int) {
         val day = today()
         update { u -> u.copy(symptoms = u.symptoms.filter { it.date != day || it.symptom != s } + listOfNotNull(SymptomLog(day, s, level).takeIf { level > 0 })) }
+    }
+
+    fun setFlow(level: Int) {
+        val day = today()
+        update { u -> u.copy(flows = u.flows.filter { it.date != day } + listOfNotNull(FlowLog(day, level).takeIf { level > 0 })) }
+        setSymptom(Symptom.HEAVY_FLOW, if (level == 3) 2 else 0)
     }
 
     fun startPeriod() {
@@ -383,7 +389,7 @@ class Onme(private val context: Context) {
     init {
         scope.launch { delay(LOADING_MS); if (screen == Screen.LOADING) screen = Screen.PROFILE }
         scope.launch { snapshotFlow { message }.collect { speak(it) } }
-        scope.launch { snapshotFlow { card }.collect { id -> speak(when (id) { Cards.TR1 -> Copy.TR1; Cards.TR2 -> Copy.TR2; Cards.TR3 -> Copy.TR3; else -> null }) } }
+        scope.launch { snapshotFlow { card }.collect { id -> speak(when (id) { Cards.TR2 -> Copy.TR2; Cards.TR3 -> Copy.TR3; else -> null }) } }
         var last: DrivingState? = null
         scope.launch { snapshotFlow { driving }.collect { onDriving(last, it); last = it } }
 

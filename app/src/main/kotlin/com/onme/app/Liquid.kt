@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -72,20 +73,21 @@ half4 main(float2 fc) {
     col += band * 0.018;
     col += spec * 0.30;
     float2 c = fc / res - 0.5;
-    col = mix(col, pale, 0.35 * (1.0 - smoothstep(0.0, 0.45, length(c * float2(1.6, 1.0)))));
+    col = mix(col, pale, 0.25 * (1.0 - smoothstep(0.0, 0.45, length(c * float2(1.6, 1.0)))));
+    col = mix(col, float3(0.56, 0.78, 0.66), 0.45 * smoothstep(-0.2, 1.2, fc.x / res.x + fc.y / res.y));
     return half4(half3(col), 1.0);
 }
 """
 
-val Beige = Color(0xFFF5F1E7)
+val JadeGround = Brush.linearGradient(listOf(Color(0xFFEAF4EE), Color(0xFFCFE7D9), Color(0xFFBFDECB)), Offset.Zero, Offset.Infinite)
 
 private class Liquid { var time by mutableFloatStateOf(12f); var origin = Offset.Zero; var size = androidx.compose.ui.geometry.Size.Zero }
 private val LocalLiquid = staticCompositionLocalOf<Liquid?> { null }
 
 @Composable
-fun LiquidGround(animate: Boolean, beige: Boolean, content: @Composable BoxScope.() -> Unit) {
+fun LiquidGround(animate: Boolean, plain: Boolean, content: @Composable BoxScope.() -> Unit) {
     val reduceMotion = Settings.Global.getFloat(LocalContext.current.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    if (beige) return Box(Modifier.fillMaxSize().background(Beige), content = content)
+    if (plain) return Box(Modifier.fillMaxSize().background(JadeGround), content = content)
     if (Build.VERSION.SDK_INT < 33) {
         Box(Modifier.fillMaxSize().drawBehind {
             drawRect(Pale)
@@ -130,21 +132,19 @@ private fun waterModifier(liquid: Liquid, offset: Offset, ownSize: Boolean = fal
 fun GlassPane(shape: Shape, modifier: Modifier = Modifier, strength: Float = 1f, content: @Composable BoxScope.() -> Unit) {
     val liquid = LocalLiquid.current
     var pos by remember { mutableStateOf(Offset.Zero) }
-    Box(modifier.onGloballyPositioned { pos = it.positionInRoot() }.clip(shape)) {
+    Box(modifier.onGloballyPositioned { pos = it.positionInRoot() }
+        .shadow(28.dp * strength, shape, ambientColor = Accent.copy(alpha = 0.25f), spotColor = Accent.copy(alpha = 0.35f)).clip(shape)) {
         if (liquid != null && Build.VERSION.SDK_INT >= 33) {
-            Box(Modifier.matchParentSize().blur(26.dp, BlurredEdgeTreatment.Unbounded).then(waterModifier(liquid, pos - liquid.origin)))
+            Box(Modifier.matchParentSize().blur(30.dp, BlurredEdgeTreatment.Unbounded).then(waterModifier(liquid, pos - liquid.origin)))
         }
         Box(Modifier.matchParentSize().drawBehind {
-            drawRect(Brush.linearGradient(
-                0f to Color.White.copy(alpha = 0.58f * strength), 0.55f to Color.White.copy(alpha = 0.26f * strength), 1f to Color.White.copy(alpha = 0.16f * strength),
-                start = Offset(size.width * 0.2f, 0f), end = Offset(size.width * 0.8f, size.height),
-            ))
-            drawRect(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Point.copy(alpha = 0.16f)))
-            drawRect(Brush.linearGradient(
-                0.38f to Color.Transparent, 0.46f to Color.White.copy(alpha = 0.32f * strength), 0.52f to Color.White.copy(alpha = 0.06f), 0.60f to Color.Transparent,
-                start = Offset(-size.width * 0.3f, 0f), end = Offset(size.width * 1.1f, size.height * 0.9f),
-            ))
-        }.border(1.5.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.15f), StartRim)), shape))
+            drawRect(if (solidGlass) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.96f), Color.White.copy(alpha = 0.92f))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.34f * strength), Color.White.copy(alpha = 0.14f * strength))))
+            drawRect(Brush.verticalGradient(0f to Color.White.copy(alpha = 0.45f * strength), 0.06f to Color.Transparent))
+            drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.22f * strength), Color.Transparent), Offset(size.width * 0.2f, 0f), size.width * 0.9f))
+        }.border(1.dp, Brush.linearGradient(
+            0f to Color.White, 0.35f to Color.White.copy(alpha = 0.25f), 0.65f to Color.White.copy(alpha = 0.08f), 1f to Color.White.copy(alpha = 0.7f),
+            start = Offset.Zero, end = Offset.Infinite,
+        ), shape))
         content()
     }
 }
@@ -152,6 +152,26 @@ fun GlassPane(shape: Shape, modifier: Modifier = Modifier, strength: Float = 1f,
 fun Modifier.glass(shape: Shape, strength: Float = 1f) = this
     .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.62f * strength), Color.White.copy(alpha = 0.34f * strength))), shape)
     .border(1.5.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.15f), StartRim)), shape)
+
+private val orbShader by lazy { if (Build.VERSION.SDK_INT >= 33) RuntimeShader(BALL) else null }
+
+fun Modifier.jadeOrb() = this
+    .drawBehind {
+        val sh = orbShader
+        if (sh != null && Build.VERSION.SDK_INT >= 33) {
+            sh.setFloatUniform("c", center.x, center.y)
+            sh.setFloatUniform("r", size.minDimension / 2)
+            sh.setFloatUniform("t", 4f)
+            sh.setFloatUniform("deep", 0.13f, 0.42f, 0.26f)
+            sh.setFloatUniform("milky", 0.62f, 0.86f, 0.66f)
+            sh.setFloatUniform("opacity", 0.42f)
+            sh.setFloatUniform("grain", 3.2f)
+            sh.setFloatUniform("vein", 0.3f)
+            drawCircle(ShaderBrush(sh))
+        } else drawCircle(Brush.radialGradient(0f to Color(0xAA9EDBA8), 0.55f to Color(0x994F9E70), 1f to Color(0xCC216B42), center = Offset(size.width * 0.45f, size.height * 0.4f), radius = size.minDimension * 0.62f))
+        drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.6f), Color.Transparent), Offset(size.width * 0.34f, size.height * 0.28f), size.minDimension * 0.2f))
+    }
+    .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.1f))), CircleShape)
 
 fun Modifier.bead(tint: Color) = this
     .drawBehind {

@@ -8,6 +8,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -59,11 +64,12 @@ val CardBg = Color.White
 val Accent = Color(0xFF3F8069)
 val Point = Color(0xFF9DD5BD)
 val MainText = Color(0xFF16302A)
-val SubText = Color(0xFF5B7A6E)
+val SubText = Color(0xFF46655A)
 val Mint = Color(0xFF7FC0A5)
+val Deep = Color(0xFF2F6B55)
 val SosRed = Color(0xFFD2646B)
 private val StartInk = Color(0xFF16302A)
-private val StartSub = Color(0xFF5B7A6E)
+private val StartSub = Color(0xFF46655A)
 private val StartBrand = Color(0xFF3F8069)
 val EaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 val LocalCompact = staticCompositionLocalOf { false }
@@ -71,10 +77,12 @@ val compact: Boolean @Composable get() = LocalCompact.current
 
 @Composable
 fun OnmeUi(o: Onme) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    solidGlass = remember { android.provider.Settings.Secure.getInt(ctx.contentResolver, "high_text_contrast_enabled", 0) == 1 }
     MaterialTheme(colorScheme = lightColorScheme(primary = Point, onPrimary = Bg, surface = CardBg, onSurface = MainText, background = Pale, onBackground = MainText)) {
         val start = o.screen == Screen.LOADING || o.screen == Screen.PROFILE
         Surface(Modifier.fillMaxSize(), color = Color.White, contentColor = MainText) {
-            LiquidGround(o.parked, beige = !start) {
+            LiquidGround(o.parked, plain = !start) {
               BoxWithConstraints(Modifier.fillMaxSize()) {
                CompositionLocalProvider(LocalCompact provides (maxWidth < 1200.dp)) {
                 AnimatedContent(
@@ -91,8 +99,11 @@ fun OnmeUi(o: Onme) {
     }
 }
 
+private fun depth(s: Screen) = when (s) { Screen.HOME -> 0; Screen.CONFIRM, Screen.RESET -> 2; Screen.FEEDBACK -> 3; else -> 1 }
+
 @Composable
 private fun AppShell(o: Onme) {
+    val calmMotion = android.provider.Settings.Global.getFloat(androidx.compose.ui.platform.LocalContext.current.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     val c = compact
     val bottom = if (o.demo) (if (c) 212.dp else 136.dp) else 44.dp
     val start = if (c) 128.dp else 216.dp
@@ -102,7 +113,12 @@ private fun AppShell(o: Onme) {
         Rail(o, Modifier.padding(start = if (c) 16.dp else 32.dp, top = 32.dp, bottom = if (o.demo) bottom - 12.dp else 32.dp))
         AnimatedContent(
             targetState = o.screen,
-            transitionSpec = { fadeIn(tween(220, easing = EaseOut)) togetherWith fadeOut(tween(100)) },
+            transitionSpec = {
+                val dir = if (calmMotion) 0f else depth(targetState).compareTo(depth(initialState)).toFloat()
+                val sp = spring<IntOffset>(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)
+                (fadeIn(tween(180)) + slideInHorizontally(sp) { (it * 0.03f * dir).toInt() } + scaleIn(spring(1f, Spring.StiffnessMediumLow), if (targetState == Screen.CONFIRM && !calmMotion) 0.96f else 1f)) togetherWith
+                    (fadeOut(tween(120)) + slideOutHorizontally(sp) { (-it * 0.03f * dir).toInt() })
+            },
             modifier = Modifier.fillMaxSize().padding(start = start, end = end, top = 44.dp, bottom = bottom + if (o.card != null) 144.dp else 0.dp),
             label = "screen",
         ) { s ->
@@ -143,8 +159,10 @@ fun Modifier.tap(onClick: () -> Unit): Modifier {
     return graphicsLayer { scaleX = s; scaleY = s }.clickable(src, indication = null, role = Role.Button, onClick = onClick)
 }
 
+var solidGlass = false
+
 fun Modifier.darkGlass(shape: Shape, fill: Color = Color.White.copy(alpha = 0.55f)) = clip(shape)
-    .background(Brush.verticalGradient(listOf(fill.copy(alpha = (fill.alpha + 0.15f).coerceAtMost(1f)), fill)))
+    .background(if (solidGlass) SolidColor(Color.White.copy(alpha = 0.95f)) else Brush.verticalGradient(listOf(fill.copy(alpha = (fill.alpha + 0.15f).coerceAtMost(1f)), fill)))
     .border(1.5.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.3f), Accent.copy(alpha = 0.12f))), shape)
 
 val R40 = RoundedCornerShape(40.dp)
@@ -154,18 +172,20 @@ enum class Kind { Primary, Quiet, Danger }
 
 @Composable
 fun Btn(text: String, modifier: Modifier = Modifier, kind: Kind = Kind.Primary, height: Dp = 84.dp, onClick: () -> Unit) {
-    val bg = when (kind) { Kind.Primary -> Point; Kind.Quiet -> MainText.copy(alpha = 0.08f); Kind.Danger -> SosRed.copy(alpha = 0.22f) }
-    val edge = when (kind) { Kind.Danger -> SosRed.copy(alpha = 0.55f); Kind.Quiet -> MainText.copy(alpha = 0.16f); else -> Accent.copy(alpha = 0.55f) }
+    val view = androidx.compose.ui.platform.LocalView.current
+    val press = if (kind == Kind.Primary && android.os.Build.VERSION.SDK_INT >= 30) { { view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM); onClick() } } else onClick
+    val bg = when (kind) { Kind.Primary -> Deep; Kind.Quiet -> MainText.copy(alpha = 0.08f); Kind.Danger -> SosRed.copy(alpha = 0.22f) }
+    val edge = when (kind) { Kind.Danger -> SosRed.copy(alpha = 0.55f); Kind.Quiet -> MainText.copy(alpha = 0.16f); else -> Color.White.copy(alpha = 0.25f) }
     Row(
-        modifier.tap(onClick).height(height).clip(CircleShape).background(bg).border(1.dp, edge, CircleShape)
+        modifier.tap(press).height(height).clip(CircleShape).background(bg).border(1.dp, edge, CircleShape)
             .padding(start = 40.dp, end = if (kind == Kind.Primary) 16.dp else 40.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
     ) {
         Text(text, fontSize = if (height < 70.dp) 19.sp else if (height >= 100.dp) 26.sp else 23.sp, fontWeight = if (kind == Kind.Primary) FontWeight.SemiBold else FontWeight.Medium,
-            color = if (kind == Kind.Primary) Bg else MainText, maxLines = 1)
+            color = if (kind == Kind.Primary) Color.White else MainText, maxLines = 1)
         if (kind == Kind.Primary) {
             Spacer(Modifier.width(16.dp))
-            Box(Modifier.size(if (height < 70.dp) 40.dp else 52.dp).background(Bg.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) { Glyph(Ic.CHEV, Bg, 22.dp) }
+            Box(Modifier.size(if (height < 70.dp) 40.dp else 52.dp).background(Color.White.copy(alpha = 0.18f), CircleShape), contentAlignment = Alignment.Center) { Glyph(Ic.CHEV, Color.White, 22.dp) }
         }
     }
 }
@@ -188,7 +208,7 @@ fun Head(o: Onme, title: String, right: @Composable RowScope.() -> Unit = {}) = 
 @Composable
 fun Head(o: Onme, title: @Composable RowScope.() -> Unit, right: @Composable RowScope.() -> Unit = {}) {
     Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-        Box(Modifier.tap { o.go(Screen.HOME) }.size(72.dp).darkGlass(CircleShape).border(1.dp, MainText.copy(alpha = 0.16f), CircleShape), contentAlignment = Alignment.Center) { Glyph(Ic.BACK, MainText, 30.dp) }
+        Box(Modifier.tap { o.back() }.size(72.dp).darkGlass(CircleShape).border(1.dp, MainText.copy(alpha = 0.16f), CircleShape), contentAlignment = Alignment.Center) { Glyph(Ic.BACK, MainText, 30.dp) }
         title()
         Spacer(Modifier.weight(1f))
         right()
@@ -198,8 +218,8 @@ fun Head(o: Onme, title: @Composable RowScope.() -> Unit, right: @Composable Row
 
 @Composable
 fun CareBadge(care: CareId, size: Dp, icon: Dp) {
-    Box(Modifier.size(size).background(Brush.radialGradient(listOf(Color.White, Point, Mint), Offset.Unspecified), CircleShape), contentAlignment = Alignment.Center) {
-        Glyph(Ic.CARE.getValue(care), Bg, icon, play = care)
+    Box(Modifier.size(size).bead(Color(0xFF6DBF94)), contentAlignment = Alignment.Center) {
+        Glyph(Ic.CARE.getValue(care), Color(0xFF0F3D2C), icon, play = care)
     }
 }
 
@@ -317,9 +337,9 @@ fun MoodDrop(m: MoodId, label: String, index: Int, still: Boolean = false, orb: 
         val on = lit || pressed
         val calm = still || android.provider.Settings.Global.getFloat(androidx.compose.ui.platform.LocalContext.current.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
         val squash by androidx.compose.animation.core.animateFloatAsState(if (pressed) 1f else 0f,
-            if (pressed) tween(110, easing = EaseOut) else spring(dampingRatio = 0.35f, stiffness = 420f), label = "squash")
+            if (pressed) tween(110, easing = EaseOut) else spring(dampingRatio = 0.75f, stiffness = 420f), label = "squash")
         val hop = remember { Animatable(0f) }
-        LaunchedEffect(lit) { if (lit && !calm) { hop.animateTo(1f, tween(140, easing = EaseOut)); hop.animateTo(0f, spring(dampingRatio = 0.45f, stiffness = 380f)) } }
+        LaunchedEffect(lit) { if (lit && !calm) { hop.animateTo(1f, tween(140, easing = EaseOut)); hop.animateTo(0f, spring(dampingRatio = 0.8f, stiffness = 380f)) } }
         Box(Modifier.size(orb)) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
             val lift = 1f - 0.35f * hop.value
@@ -356,19 +376,19 @@ private fun Rail(o: Onme, modifier: Modifier) {
     val c = compact
     val cell = if (c) 80.dp else 112.dp
     Column(
-        modifier.width(if (c) 96.dp else 136.dp).fillMaxHeight().darkGlass(RoundedCornerShape(if (c) 36.dp else 44.dp)).padding(vertical = 16.dp),
+        modifier.width(if (c) 96.dp else 136.dp).fillMaxHeight().darkGlass(RoundedCornerShape(if (c) 36.dp else 44.dp)).border(1.5.dp, Accent.copy(alpha = 0.25f), RoundedCornerShape(if (c) 36.dp else 44.dp)).padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Column(Modifier.tap { o.switchProfile() }.size(cell), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Box(Modifier.size(if (c) 44.dp else 56.dp).background(Brush.radialGradient(listOf(Color.White, avatarColor(o, p))), CircleShape), contentAlignment = Alignment.Center) {
-                Text(p.role.take(1), fontSize = if (c) 18.sp else 22.sp, fontWeight = FontWeight.Bold, color = Bg)
+            Box(Modifier.size(if (c) 44.dp else 56.dp).jadeOrb(), contentAlignment = Alignment.Center) {
+                Text(p.role.take(1), fontSize = if (c) 18.sp else 22.sp, fontWeight = FontWeight.Bold, color = MainText)
             }
             Spacer(Modifier.height(if (c) 4.dp else 8.dp))
-            Text(p.role, fontSize = if (c) 16.sp else 19.sp, fontWeight = FontWeight.Medium)
+            Text(p.role, fontSize = if (c) 18.sp else 19.sp, fontWeight = FontWeight.Medium)
         }
         Box(Modifier.padding(top = 4.dp, bottom = 8.dp).width(56.dp).height(1.dp).background(MainText.copy(alpha = 0.08f)))
         val home = o.screen in setOf(Screen.HOME, Screen.RESULT, Screen.GOAL, Screen.CONFIRM)
-        RailItem(Ic.HOME, "홈", home) { o.go(Screen.HOME) }
+        RailItem(Ic.HOME, "기분", home) { o.go(Screen.HOME) }
         if (o.parked) {
             if (o.user.cycleTracking) {
                 RailItem(Ic.REC, "기록", o.screen == Screen.RECORD) { o.go(Screen.RECORD) }
@@ -386,7 +406,7 @@ private fun Rail(o: Onme, modifier: Modifier) {
         ) {
             Box(Modifier.size(30.dp).background(SosRed.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) { Box(Modifier.size(16.dp).background(SosRed, CircleShape)) }
             Spacer(Modifier.height(6.dp))
-            Text("급할 때", fontSize = if (c) 16.sp else 19.sp, fontWeight = FontWeight.Medium)
+            Text("급할 때", fontSize = if (c) 18.sp else 19.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -395,12 +415,12 @@ private fun Rail(o: Onme, modifier: Modifier) {
 private fun RailItem(icon: AnimIcon, label: String, on: Boolean, onClick: () -> Unit) {
     val c = compact
     Column(
-        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Point.copy(alpha = 0.14f) else Color.Transparent).border(1.dp, if (on) Accent.copy(alpha = 0.45f) else MainText.copy(alpha = 0.10f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
+        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Point.copy(alpha = 0.14f) else Color.Transparent).border(if (on) 2.dp else 1.5.dp, if (on) Accent else Accent.copy(alpha = 0.32f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) {
         Glyph(icon, Accent, if (c) 26.dp else 30.dp, play = on)
         Spacer(Modifier.height(if (c) 4.dp else 8.dp))
-        Text(label, fontSize = if (c) 16.sp else 19.sp, fontWeight = FontWeight.Medium, color = if (on) MainText else SubText)
+        Text(label, fontSize = if (c) 18.sp else 19.sp, fontWeight = FontWeight.Medium, color = if (on) MainText else SubText)
     }
 }
 
@@ -419,7 +439,7 @@ private fun Toast(o: Onme, modifier: Modifier) {
 
 @Composable
 private fun TriggerCard(o: Onme, id: String, modifier: Modifier) {
-    val text = when (id) { Cards.TR1 -> Copy.TR1; Cards.TR2 -> Copy.TR2; else -> Copy.TR3 }
+    val text = when (id) { Cards.TR2 -> Copy.TR2; else -> Copy.TR3 }
     Row(
         modifier.fillMaxWidth().height(128.dp).darkGlass(RoundedCornerShape(64.dp), Color.White.copy(alpha = 0.88f)).border(1.5.dp, Point, RoundedCornerShape(64.dp))
             .padding(start = 48.dp, end = 22.dp),
@@ -533,13 +553,13 @@ private fun ColumnScope.Result(o: Onme) {
     Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (top != null) TopPick(o, top, mood, goal, (r as? Recommendation.SafetyFirst)?.notice, Modifier.fillMaxWidth().weight(1f))
         else Text(Copy.GENERAL, fontSize = 22.sp, color = SubText, modifier = Modifier.padding(start = 8.dp))
-        others.forEachIndexed { i, care ->
-            OtherRow(o, care, i < alts.size, Modifier.fillMaxWidth().height(if (c) 120.dp else 140.dp))
+        if (others.isNotEmpty()) Row(Modifier.fillMaxWidth().height(if (c) 116.dp else 128.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            others.forEachIndexed { i, care -> OtherRow(o, care, i < alts.size, Modifier.weight(1f).fillMaxHeight()) }
+            if (others.size == 1) Spacer(Modifier.weight(1f))
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: String?, modifier: Modifier) {
     val c = compact
@@ -547,58 +567,58 @@ private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: S
     val tags = if (notice != null) listOf("안전 우선") else listOfNotNull("${moodLabel(mood)}일 때", "${Copy.GOAL.getValue(goal)}에 좋아요", "지난번 좋았어요".takeIf { liked }, "정차 중에만".takeIf { care == CareId.RESET })
     val dets = if (notice != null) listOf(notice) else details(o, care)
     val action = Copy.BUTTONS.getValue(care).first
-    @Composable fun Head(m: Modifier) = Column(m, verticalArrangement = Arrangement.spacedBy(18.dp, if (c) Alignment.Top else Alignment.CenterVertically)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            CareBadge(care, if (c) 80.dp else 96.dp, if (c) 38.dp else 44.dp)
-            Box(Modifier.height(40.dp).clip(CircleShape).background(if (notice != null) Color(0xFFE9A9AD) else Point).padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
-                Text(if (notice != null) "먼저 쉬어가요" else "가장 추천", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Bg)
-            }
+    val tone = if (notice != null) Color(0xFFE9A9AD) else Point
+    @Composable fun Head(m: Modifier) = Column(m, verticalArrangement = Arrangement.spacedBy(if (c) 14.dp else 20.dp, if (c) Alignment.Top else Alignment.CenterVertically)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(10.dp).background(if (notice != null) tone else Accent, CircleShape))
+            Spacer(Modifier.width(10.dp))
+            Text(if (notice != null) "먼저 쉬어가요" else "지금 가장 잘 맞아요", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Accent)
         }
-        Text(o.preview(care).headline, fontSize = if (c) 36.sp else 50.sp, fontWeight = FontWeight.SemiBold, lineHeight = if (c) 46.sp else 62.sp, letterSpacing = (-1).sp)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            tags.forEach { t ->
-                Box(Modifier.height(46.dp).clip(CircleShape).background(Point.copy(alpha = 0.16f)).border(1.dp, Point.copy(alpha = 0.35f), CircleShape).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) { Text(t, fontSize = 20.sp) }
-            }
-        }
+        Text(o.preview(care).headline, fontSize = if (c) 38.sp else 54.sp, fontWeight = FontWeight.SemiBold, lineHeight = if (c) 48.sp else 66.sp, letterSpacing = (-1.2).sp)
+        Text(tags.joinToString("  ·  "), fontSize = 20.sp, color = SubText)
     }
-    @Composable fun Plan(m: Modifier) = Column(
-        m.clip(R32).background(Color.White.copy(alpha = 0.7f)).border(1.dp, Color.White, R32).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(if (notice != null) "안내" else "적용하면", fontSize = 19.sp, color = SubText)
-        Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
-            dets.forEach { d ->
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Point.copy(alpha = 0.10f)).padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(32.dp).clip(CircleShape).background(Point.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) { Glyph(Ic.CHECK, Accent, 16.dp) }
-                    Spacer(Modifier.width(14.dp))
-                    Text(d, fontSize = 23.sp, fontWeight = FontWeight.Medium, lineHeight = 31.sp)
+    @Composable fun Plan(m: Modifier) = Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(if (notice != null) "안내" else "누르면 이렇게 바뀌어요", fontSize = 19.sp, color = SubText)
+        Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.Center) {
+            dets.forEachIndexed { i, d ->
+                Row(Modifier.height(IntrinsicSize.Min), verticalAlignment = Alignment.Top) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.size(36.dp).jadeOrb(), contentAlignment = Alignment.Center) { Glyph(Ic.CARE.getValue(care), Color.White, 20.dp) }
+                        if (i < dets.lastIndex) Box(Modifier.width(2.dp).weight(1f).background(Point.copy(alpha = 0.6f)))
+                    }
+                    Spacer(Modifier.width(18.dp))
+                    Text(d, Modifier.padding(bottom = if (i < dets.lastIndex) 22.dp else 0.dp), fontSize = 24.sp, fontWeight = FontWeight.Medium, lineHeight = 32.sp)
                 }
             }
         }
         Btn(action, Modifier.fillMaxWidth(), height = 96.dp) { o.start(care) }
     }
-    val m = modifier.darkGlass(R40).border(1.5.dp, Point.copy(alpha = 0.45f), R40)
-    if (c) Column(m.padding(28.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Head(Modifier.fillMaxWidth())
-        Plan(Modifier.fillMaxWidth().weight(1f))
-    } else Row(m.padding(28.dp), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-        Head(Modifier.weight(1f).fillMaxHeight().padding(start = 20.dp))
-        Plan(Modifier.width(400.dp).fillMaxHeight())
+    Box(modifier.clip(R40).background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.85f), tone.copy(alpha = 0.28f)), Offset.Zero, Offset.Infinite))
+        .border(1.5.dp, Brush.linearGradient(listOf(Color.White, tone.copy(alpha = 0.5f)), Offset.Zero, Offset.Infinite), R40)) {
+        Box(Modifier.align(Alignment.BottomStart).offset(x = (-40).dp, y = 60.dp).graphicsLayer { alpha = 0.10f; rotationZ = -12f }) { Glyph(Ic.CARE.getValue(care), Accent, if (c) 220.dp else 320.dp) }
+        if (c) Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            Head(Modifier.fillMaxWidth())
+            Plan(Modifier.fillMaxWidth().weight(1f))
+        } else Row(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 36.dp), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+            Head(Modifier.weight(1f).fillMaxHeight())
+            Box(Modifier.width(1.dp).fillMaxHeight().padding(vertical = 12.dp).background(Accent.copy(alpha = 0.15f)))
+            Plan(Modifier.width(380.dp).fillMaxHeight())
+        }
     }
 }
 
 @Composable
 private fun OtherRow(o: Onme, care: CareId, alsoGood: Boolean, modifier: Modifier) {
     val c = compact
-    Row(modifier.tap { o.start(care) }.darkGlass(R32).border(1.dp, MainText.copy(alpha = 0.12f), R32).padding(horizontal = if (c) 22.dp else 30.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(72.dp).background(Point.copy(alpha = 0.12f), CircleShape), contentAlignment = Alignment.Center) { Glyph(Ic.CARE.getValue(care), Accent, 36.dp) }
-        Spacer(Modifier.width(22.dp))
+    Row(modifier.tap { o.start(care) }.darkGlass(R32).padding(horizontal = if (c) 18.dp else 26.dp), verticalAlignment = Alignment.CenterVertically) {
+        CareBadge(care, if (c) 60.dp else 68.dp, if (c) 28.dp else 32.dp)
+        Spacer(Modifier.width(18.dp))
         Column(Modifier.weight(1f)) {
-            Text(Copy.CARE_NAME.getValue(care), fontSize = if (c) 23.sp else 27.sp, fontWeight = FontWeight.SemiBold)
-            Text(details(o, care).first(), fontSize = 20.sp, color = SubText, maxLines = 1)
+            if (alsoGood) Text("이것도 괜찮아요", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Accent)
+            Text(Copy.CARE_NAME.getValue(care), fontSize = if (c) 22.sp else 25.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(details(o, care).first(), fontSize = 19.sp, color = SubText, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
-        if (alsoGood && !c) Text("이것도 괜찮아요", fontSize = 18.sp, color = Accent, modifier = Modifier.padding(end = 18.dp))
-        Glyph(Ic.CHEV, SubText, 26.dp)
+        Glyph(Ic.CHEV, SubText, 24.dp)
     }
 }
 
@@ -663,7 +683,7 @@ private fun ColumnScope.Confirm(o: Onme) {
     val third: @Composable (Modifier) -> Unit = { m ->
         DataCard(if (care in VEHICLE_CARES) "바뀐 설정" else "안내", m) {
             val lines = if (care in VEHICLE_CARES) summary(a.settings) + listOfNotNull("이번 주행 동안 온미 알림 끄기".takeIf { a.quietDrive }) else details(o, care)
-            lines.forEach { d -> Row(verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(8.dp).background(Point, CircleShape)); Spacer(Modifier.width(10.dp)); Text(d, fontSize = 21.sp, color = SubText) } }
+            lines.forEach { d -> Row(verticalAlignment = Alignment.CenterVertically) { Glyph(Ic.CARE.getValue(care), Accent, 24.dp); Spacer(Modifier.width(12.dp)); Text(d, fontSize = 21.sp, color = SubText) } }
         }
     }
     if (c) Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -846,8 +866,6 @@ private fun Loading() {
     }
 }
 
-private val AVATARS = listOf(Color(0xFFBFE8D6), Color(0xFFC9D9F0), Color(0xFFF5D6C8), Color(0xFFDCD3F0))
-private fun avatarColor(o: Onme, p: Profile) = AVATARS[o.profiles.indexOf(p).coerceAtLeast(0) % AVATARS.size]
 
 private fun greeting(hour: Int) = when (hour) {
     in 5..10 -> "좋은 아침이에요"
@@ -876,7 +894,7 @@ private fun ProfilePick(o: Onme) {
             Row(horizontalArrangement = Arrangement.spacedBy(if (c) 16.dp else 28.dp)) {
                 o.profiles.forEach { p ->
                     ProfileCard(p.role, { o.selectProfile(p) }) {
-                        Box(Modifier.size(bead).bead(avatarColor(o, p)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(bead).jadeOrb(), contentAlignment = Alignment.Center) {
                             Text(p.role.take(1), fontSize = if (c) 36.sp else 46.sp, fontWeight = FontWeight.SemiBold, color = StartInk)
                         }
                     }

@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -74,7 +75,7 @@ private fun Toggle(label: String, value: Boolean, why: String? = null, onChange:
     Row(Modifier.tap { onChange(!value) }.fillMaxWidth().heightIn(min = 84.dp).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(end = 20.dp)) {
             Text(label, fontSize = 22.sp)
-            why?.let { Text(it, fontSize = 17.sp, color = SubText, lineHeight = 25.sp, modifier = Modifier.padding(top = 4.dp)) }
+            why?.let { Text(it, fontSize = 19.sp, color = SubText, lineHeight = 25.sp, modifier = Modifier.padding(top = 4.dp)) }
         }
         Box(Modifier.size(width = 76.dp, height = 44.dp).clip(CircleShape).background(if (value) Point else MainText.copy(alpha = 0.14f))) {
             Box(Modifier.offset(x = x, y = 5.dp).size(34.dp).background(Color.White, CircleShape))
@@ -141,7 +142,7 @@ fun ColumnScope.Onboarding(o: Onme) {
                     Toggle("차량 설정 제어", consents.vehicleControl, Why.VEHICLE) { consents = consents.copy(vehicleControl = it) }
                     Toggle("음악 서비스 연결", consents.musicService, Why.MUSIC) { consents = consents.copy(musicService = it) }
                     Toggle("상황 알림 카드", consents.proactiveCards, Why.CARDS) { consents = consents.copy(proactiveCards = it) }
-                    Text("다른 앱 기록 가져오기는 준비 중이에요.", fontSize = 18.sp, color = SubText)
+                    Text("다른 앱 기록 가져오기는 준비 중이에요.", fontSize = 19.sp, color = SubText)
                 }
                 1 -> {
                     Text("마지막 생리 시작일", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
@@ -162,7 +163,7 @@ fun ColumnScope.Onboarding(o: Onme) {
                     Text("자주 불편한 시기가 있나요? 누를 때마다 생리 전, 생리 중, 둘 다, 없음 순으로 바뀌어요", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
                     val timingLabel = mapOf(SignalTiming.BEFORE to "생리 전", SignalTiming.DURING to "생리 중", SignalTiming.BOTH to "둘 다")
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Symptom.entries.forEach { s ->
+                        SYMPTOM_OPTIONS.forEach { s ->
                             val t = signals[s]
                             Opt(SymptomCopy.LABEL.getValue(s) + (t?.let { ", ${timingLabel.getValue(it)}" } ?: ""), t != null) {
                                 val next = when (t) { null -> SignalTiming.BEFORE; SignalTiming.BEFORE -> SignalTiming.DURING; SignalTiming.DURING -> SignalTiming.BOTH; SignalTiming.BOTH -> null }
@@ -321,7 +322,7 @@ fun ColumnScope.Calendar(o: Onme) {
             CycleDial(f, last, mu, dayIdx, Modifier.fillMaxHeight().aspectRatio(1f))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(now, fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp, color = if (ph?.first == Phase.P1) Accent else if (ph?.first == Phase.OVERDUE) SosRed else MainText)
-                Text(sub, fontSize = 18.sp, color = SubText)
+                Text(sub, fontSize = 19.sp, color = SubText)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     f?.takeIf { !it.paused }?.let { MiniChip("다음", "${it.rangeStart.format(MD)}–${it.rangeEnd.format(MD)}") }
                     f?.let { MiniChip("정확도", listOf("시작", "학습 중", "개인화")[it.accuracyStage - 1]) }
@@ -332,7 +333,7 @@ fun ColumnScope.Calendar(o: Onme) {
     } else Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         Column(Modifier.width(440.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             side(Modifier.fillMaxWidth().weight(1f))
-            Text(Copy.ESTIMATE_DISCLAIMER, fontSize = 15.sp, color = SubText, lineHeight = 23.sp, modifier = Modifier.padding(horizontal = 6.dp))
+            Text(Copy.ESTIMATE_DISCLAIMER, fontSize = 19.sp, color = SubText, lineHeight = 23.sp, modifier = Modifier.padding(horizontal = 6.dp))
         }
         MonthCard(u, f, today, month, { month = it }, Modifier.weight(1f).fillMaxHeight())
     }
@@ -357,8 +358,8 @@ private fun CycleDial(f: CycleForecast?, last: LocalDate?, mu: Int, day: Int, mo
         arc(mu - 6f, 6f, Mint.copy(alpha = 0.45f))
         val rs = java.time.temporal.ChronoUnit.DAYS.between(last, f.rangeStart).toFloat()
         val re = java.time.temporal.ChronoUnit.DAYS.between(last, f.rangeEnd).toFloat()
-        arc(rs, re - rs + 1f, Accent.copy(alpha = 0.55f), sw * 0.28f)
-        arc(0f, f.periodDays.toFloat(), Point)
+        arc(rs, re - rs + 1f, Crimson.copy(alpha = 0.35f), sw * 0.28f)
+        arc(0f, f.periodDays.toFloat(), Crimson.copy(alpha = 0.8f))
     }
     val a = Math.toRadians(-90.0 + (((day % mu) + mu) % mu) * 360.0 / mu)
     val m = Offset(cen.x + r * kotlin.math.cos(a).toFloat(), cen.y + r * kotlin.math.sin(a).toFloat())
@@ -378,9 +379,9 @@ private fun MiniChip(label: String, value: String) = Column(
 private fun SmallStat(label: String, value: String, note: String?, modifier: Modifier, steps: Int = -1) = Column(
     modifier.darkGlass(RoundedCornerShape(28.dp)).padding(horizontal = 22.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
 ) {
-    Text(label, fontSize = 17.sp, color = SubText)
+    Text(label, fontSize = 19.sp, color = SubText)
     Text(value, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.5).sp)
-    note?.let { Text(it, fontSize = 16.sp, color = Accent) }
+    note?.let { Text(it, fontSize = 19.sp, color = Accent) }
     if (steps >= 0) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (1..3).forEach { k -> Box(Modifier.weight(1f).height(10.dp).clip(CircleShape).background(if (k <= steps) Point else MainText.copy(alpha = 0.12f))) }
     }
@@ -399,7 +400,7 @@ private fun MonthCard(u: UserData, f: CycleForecast?, today: LocalDate, month: Y
             Round(Ic.CHEV) { onMonth(month.plusMonths(1)) }
         }
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.height(36.dp), verticalAlignment = Alignment.CenterVertically) { listOf("일", "월", "화", "수", "목", "금", "토").forEach { Text(it, Modifier.weight(1f), fontSize = 18.sp, color = SubText, textAlign = TextAlign.Center) } }
+        Row(Modifier.height(36.dp), verticalAlignment = Alignment.CenterVertically) { listOf("일", "월", "화", "수", "목", "금", "토").forEach { Text(it, Modifier.weight(1f), fontSize = 19.sp, color = SubText, textAlign = TextAlign.Center) } }
         val first = month.atDay(1)
         val cells = List(first.dayOfWeek.value % 7) { null } + (1..month.lengthOfMonth()).map { month.atDay(it) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -411,7 +412,7 @@ private fun MonthCard(u: UserData, f: CycleForecast?, today: LocalDate, month: Y
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(if (c) 16.dp else 24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Legend(Point, "생리"); Legend(Point.copy(alpha = 0.3f), "예상 생리"); Legend(null, "생리 전"); Legend(Color.Transparent, "예정 범위", Mint)
+            Legend(Crimson.copy(alpha = 0.85f), "생리"); Legend(Crimson.copy(alpha = 0.16f), "예상 생리"); Legend(null, "생리 전"); Legend(Mint.copy(alpha = 0.3f), "예정 범위")
             if (u.familyPlanning) Legend(Accent.copy(alpha = 0.32f), "배란 추정")
         }
     }
@@ -419,27 +420,50 @@ private fun MonthCard(u: UserData, f: CycleForecast?, today: LocalDate, month: Y
 
 @Composable
 private fun Legend(fill: Color?, label: String, edge: Color = Color.Transparent) = Row(verticalAlignment = Alignment.CenterVertically) {
-    if (fill == null) Box(Modifier.padding(7.dp).size(8.dp).background(Mint, CircleShape))
+    if (fill == null) Box(Modifier.padding(7.dp).size(8.dp).background(Accent, CircleShape))
     else Box(Modifier.size(22.dp).clip(CircleShape).background(fill).border(2.5.dp, edge, CircleShape))
-    Spacer(Modifier.width(8.dp)); Text(label, fontSize = if (compact) 16.sp else 18.sp, color = SubText)
+    Spacer(Modifier.width(8.dp)); Text(label, fontSize = if (compact) 18.sp else 19.sp, color = SubText)
 }
+
+private val Crimson = Color(0xFFC0283C)
+
+private enum class Band { PERIOD, PREDICTED, RANGE }
+
+private fun bandOf(day: LocalDate, u: UserData, f: CycleForecast?, today: LocalDate): Band? {
+    val ph = phaseOn(u, day)
+    return when {
+        ph?.first == Phase.P1 -> Band.PERIOD
+        f != null && !f.paused && day > today && ph?.first == Phase.OVERDUE && (ph.second ?: 99) < f.periodDays -> Band.PREDICTED
+        f != null && !f.paused && day >= f.rangeStart && day <= f.rangeEnd -> Band.RANGE
+        else -> null
+    }
+}
+
+private fun bandColor(b: Band) = when (b) { Band.PERIOD -> Crimson.copy(alpha = 0.16f); Band.PREDICTED -> Crimson.copy(alpha = 0.08f); Band.RANGE -> Mint.copy(alpha = 0.22f) }
 
 @Composable
 private fun DayCell(day: LocalDate?, u: UserData, f: CycleForecast?, today: LocalDate, modifier: Modifier, dot: androidx.compose.ui.unit.Dp) {
-    Box(modifier, contentAlignment = Alignment.Center) {
-        if (day == null) return@Box
-        val ph = phaseOn(u, day)
-        val predicted = f != null && !f.paused && day > today && ph?.first == Phase.OVERDUE && (ph.second ?: 99) < f.periodDays
-        val p1 = ph?.first == Phase.P1
-        val inRange = f != null && !f.paused && day >= f.rangeStart && day <= f.rangeEnd
-        val isToday = day == today
-        val fill = when { p1 -> Point; predicted -> Point.copy(alpha = 0.3f); ph?.first == Phase.P3 && u.familyPlanning -> Accent.copy(alpha = 0.32f); else -> Color.Transparent }
-        val edge = when { isToday -> MainText; inRange -> Mint; else -> Color.Transparent }
-        Box(Modifier.size(dot).clip(CircleShape).background(fill).border(if (isToday) 3.dp else 2.5.dp, edge, CircleShape), contentAlignment = Alignment.Center) {
-            Text("${day.dayOfMonth}", fontSize = if (compact) 20.sp else 24.sp, fontWeight = if (p1 || isToday) FontWeight.Bold else FontWeight.Medium)
-            if (ph?.first == Phase.P5) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 7.dp).size(6.dp).background(Mint, CircleShape))
+    if (day == null) return Box(modifier)
+    val ph = phaseOn(u, day)
+    val band = bandOf(day, u, f, today)
+    val joinL = band != null && day.dayOfWeek != java.time.DayOfWeek.SUNDAY && day.dayOfMonth > 1 && bandOf(day.minusDays(1), u, f, today) == band
+    val joinR = band != null && day.dayOfWeek != java.time.DayOfWeek.SATURDAY && day.dayOfMonth < day.lengthOfMonth() && bandOf(day.plusDays(1), u, f, today) == band
+    val isToday = day == today
+    val period = band == Band.PERIOD
+    Box(modifier.drawBehind {
+        if (band == null) return@drawBehind
+        val h = dot.toPx(); val top = center.y - h / 2; val col = bandColor(band)
+        if (joinL) drawRect(col, Offset(0f, top), Size(center.x, h))
+        if (joinR) drawRect(col, Offset(center.x, top), Size(size.width - center.x, h))
+        if (!joinL || !joinR) drawCircle(col, h / 2, center)
+    }, contentAlignment = Alignment.Center) {
+        val fill = when { period -> Crimson.copy(alpha = 0.85f); ph?.first == Phase.P3 && u.familyPlanning -> Color(0xFF3F8FD8).copy(alpha = 0.25f); else -> Color.Transparent }
+        Box(Modifier.size(dot).clip(CircleShape).background(fill).then(if (isToday) Modifier.border(2.5.dp, if (period) Color.White else MainText, CircleShape) else Modifier), contentAlignment = Alignment.Center) {
+            Text("${day.dayOfMonth}", fontSize = if (compact) 20.sp else 24.sp, fontWeight = if (period || isToday) FontWeight.Bold else FontWeight.Medium,
+                color = when { period -> Color.White; band == Band.PREDICTED -> Crimson; else -> MainText })
+            if (ph?.first == Phase.P5) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 7.dp).size(6.dp).background(Accent, CircleShape))
         }
-        if (isToday) Text("오늘", Modifier.align(Alignment.BottomCenter), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        if (isToday) Text("오늘", Modifier.align(Alignment.BottomCenter), fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -448,28 +472,38 @@ private val LEVEL = listOf("", "약하게", "보통", "강하게")
 @Composable
 fun ColumnScope.Record(o: Onme) {
     val today = o.today()
-    val order = if (o.user.onboarding?.situation == Situation.PERIMENOPAUSE) listOf(Symptom.HOT_STUFFY) + (Symptom.entries - Symptom.HOT_STUFFY) else Symptom.entries
+    val order = if (o.user.onboarding?.situation == Situation.PERIMENOPAUSE) listOf(Symptom.HOT_STUFFY) + (SYMPTOM_OPTIONS - Symptom.HOT_STUFFY) else SYMPTOM_OPTIONS
     val saved = o.user.symptoms.filter { it.date == today }
     val ph = phaseOn(o.user, today)
     val dayN = if (ph?.first == Phase.P1) ph.second else null
     val level = { s: Symptom -> saved.firstOrNull { it.symptom == s }?.intensity ?: 0 }
     val c = compact
     Head(o, "${today.format(MD)} 기록")
+    val flow = if (dayN != null) o.user.flows.firstOrNull { it.date == today }?.level ?: 0 else null
+    var flowBig by remember { mutableStateOf((flow ?: 0) == 0) }
+    var flowTaps by remember { mutableIntStateOf(0) }
+    LaunchedEffect(flowTaps) { if (flowTaps > 0) { delay(2000); flowBig = false } }
+    val grow by animateFloatAsState(if (flowBig) 1f else 0f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessLow), label = "flowSize")
+    @Composable fun Flow(m: Modifier = Modifier) = FlowPicker(m, flow) { flowBig = true; flowTaps++; o.setFlow(it) }
     @Composable fun PeriodTiles(m: Modifier, tile: Modifier) {
         PeriodStat(dayN, m)
-        PeriodBtn(Ic.DROP, if (dayN != null) "시작 기록됨" else "오늘 시작", dayN != null, tile) { o.startPeriod() }
-        PeriodBtn(Ic.CHECK, "오늘 끝남", false, tile) { o.endPeriod() }
+        if (dayN == null) PeriodBtn(Ic.DROP, "오늘 시작", true, false, tile) { o.startPeriod() }
+        else PeriodBtn(Ic.CHECK, "오늘 끝남", true, false, tile) { o.endPeriod() }
     }
     if (c) Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Row(Modifier.fillMaxWidth().height(190.dp).darkGlass(R40).padding(20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(Modifier.fillMaxWidth().height(150.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             PeriodTiles(Modifier.weight(1.2f).fillMaxHeight(), Modifier.weight(1f).fillMaxHeight())
         }
+        Flow()
         Symptoms(o, order, level, 2, Modifier.fillMaxWidth().weight(1f))
     } else Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-        Column(Modifier.width(380.dp).fillMaxHeight().darkGlass(R40).padding(28.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            PeriodTiles(Modifier.fillMaxWidth(), Modifier.fillMaxWidth().weight(1f))
+        Column(Modifier.width(340.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            PeriodStat(dayN, Modifier.fillMaxWidth().weight(0.4f + 0.6f * (1f - grow)))
+            Flow(Modifier.weight(0.45f + 0.55f * grow))
+            if (dayN == null) PeriodBtn(Ic.DROP, "오늘 시작", true, false, Modifier.fillMaxWidth().height(104.dp)) { o.startPeriod() }
+            else PeriodBtn(Ic.CHECK, "오늘 끝남", true, false, Modifier.fillMaxWidth().height(104.dp)) { o.endPeriod() }
         }
-        Symptoms(o, order, level, 4, Modifier.weight(1f).fillMaxHeight())
+        Symptoms(o, order, level, 3, Modifier.weight(1f).fillMaxHeight())
     }
 }
 
@@ -477,31 +511,67 @@ fun ColumnScope.Record(o: Onme) {
 private fun PeriodStat(day: Int?, modifier: Modifier) {
     val on = day != null
     Column(
-        modifier.clip(RoundedCornerShape(28.dp)).background(if (on) Point.copy(alpha = 0.14f) else MainText.copy(alpha = 0.05f))
-            .border(1.5.dp, if (on) Point.copy(alpha = 0.5f) else Color.Transparent, RoundedCornerShape(28.dp)).padding(horizontal = 28.dp, vertical = 24.dp),
+        modifier.clip(R32).background(if (on) Brush.verticalGradient(listOf(Point.copy(alpha = 0.34f), Point.copy(alpha = 0.14f))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.6f))))
+            .border(1.5.dp, if (on) Point.copy(alpha = 0.7f) else MainText.copy(alpha = 0.06f), R32).padding(horizontal = 28.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("생리", fontSize = 20.sp, color = SubText)
-        Text(if (on) "${day}일째" else "기록 없음", fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = if (on) Accent else MainText)
+        Text("생리", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = if (on) Accent else SubText)
+        Spacer(Modifier.height(6.dp))
+        Text(if (on) "${day}일째" else "기록 없음", fontSize = if (compact) 36.sp else 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp, color = if (on) Accent else MainText)
+        if (!compact) {
+            Spacer(Modifier.height(10.dp))
+            Text(if (on) "끝나면 아래에서 눌러 주세요" else "시작하면 아래에서 눌러 주세요", fontSize = 19.sp, color = SubText, lineHeight = 26.sp)
+        }
+    }
+}
+
+private val FLOW = listOf("눌러서 기록", "적음", "보통", "많음")
+
+@Composable
+private fun FlowPicker(modifier: Modifier, level: Int?, onPick: (Int) -> Unit) {
+    val on = level != null
+    val v = level ?: 0
+    val tint = listOf(Color.Unspecified, Color(0xFFD9707E), Color(0xFFC0283C), Color(0xFF8E1526))[v]
+    val ink = if (v > 0) Color.White else MainText
+    val fill = if (v == 0) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.62f))) else Brush.verticalGradient(listOf(tint.copy(alpha = 0.9f), tint))
+    Column(
+        modifier.fillMaxWidth().then(if (compact) Modifier.height(96.dp) else Modifier).alpha(if (on) 1f else 0.45f)
+            .then(if (on) Modifier.tap { onPick((v + 1) % 4) } else Modifier)
+            .clip(R32).background(fill).border(1.5.dp, if (v > 0) Color.White.copy(alpha = 0.35f) else MainText.copy(alpha = 0.06f), R32)
+            .padding(horizontal = 26.dp, vertical = 22.dp),
+    ) {
+        Text("생리량", fontSize = 21.sp, fontWeight = FontWeight.Medium, color = if (v > 0) Color.White.copy(alpha = 0.85f) else SubText)
+        Text(if (on) FLOW[v] else "시작하면 기록할 수 있어요", fontSize = if (on) (if (compact) 30.sp else 40.sp) else 21.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.6).sp, color = ink)
+        Spacer(Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (on) Text("누를 때마다 바뀌어요", fontSize = 19.sp, color = if (v > 0) Color.White.copy(alpha = 0.85f) else SubText)
+                Row { (1..3).forEach { k -> Box(Modifier.padding(end = 6.dp).size(12.dp).clip(CircleShape).background(if (v > 0) Color.White.copy(alpha = if (k <= v) 1f else 0.3f) else MainText.copy(alpha = 0.12f))) } }
+            }
+            Box(Modifier.alpha(0.75f)) { Glyph(Ic.DROP, ink, if (compact) 48.dp else 76.dp, play = v, stroke = 0.9f) }
+        }
     }
 }
 
 @Composable
-private fun PeriodBtn(icon: AnimIcon, label: String, done: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Column(
-        modifier.tap(onClick).clip(R32).background(if (done) Point else MainText.copy(alpha = 0.07f)).border(1.dp, if (done) Accent.copy(alpha = 0.55f) else MainText.copy(alpha = 0.16f), R32),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
+private fun PeriodBtn(icon: AnimIcon, label: String, primary: Boolean, done: Boolean, modifier: Modifier, enabled: Boolean = true, onClick: () -> Unit) {
+    val bg = when { primary -> Deep; done -> Point.copy(alpha = 0.16f); else -> Color.White.copy(alpha = 0.7f) }
+    val ink = if (primary) Color.White else if (done) Accent else MainText
+    Row(
+        modifier.alpha(if (enabled) 1f else 0.4f).then(if (enabled) Modifier.tap(onClick) else Modifier).clip(R32).background(bg)
+            .border(1.dp, if (primary) Accent.copy(alpha = 0.55f) else MainText.copy(alpha = 0.08f), R32).padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
-        Glyph(icon, if (done) Bg else Accent, 40.dp, play = done)
-        Spacer(Modifier.height(14.dp))
-        Text(label, fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.SemiBold, color = if (done) Bg else MainText)
+        Glyph(icon, if (primary) Color.White else Accent, 32.dp, play = done)
+        Spacer(Modifier.width(12.dp))
+        Text(label, fontSize = if (compact) 22.sp else 26.sp, fontWeight = FontWeight.SemiBold, color = ink)
     }
 }
 
 @Composable
 private fun Symptoms(o: Onme, order: List<Symptom>, level: (Symptom) -> Int, cols: Int, modifier: Modifier) {
     val picked = order.map { it to level(it) }.filter { it.second > 0 }
-    Column(modifier.darkGlass(R40).padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 24.dp)) {
+    Column(modifier.padding(start = 8.dp, top = 4.dp)) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             Text("오늘 느낀 것", fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
             if (!compact) Text("한 번 누르면 약하게, 두 번 보통, 세 번 강하게", fontSize = 20.sp, color = SubText)
@@ -510,7 +580,7 @@ private fun Symptoms(o: Onme, order: List<Symptom>, level: (Symptom) -> Int, col
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             order.chunked(cols).forEach { row ->
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    row.forEach { s -> SymptomTile(SymptomCopy.LABEL.getValue(s), level(s), Modifier.weight(1f).fillMaxHeight()) { o.setSymptom(s, (level(s) + 1) % 4) } }
+                    row.forEach { s -> SymptomTile(s, SymptomCopy.LABEL.getValue(s), level(s), Modifier.weight(1f).fillMaxHeight()) { o.setSymptom(s, (level(s) + 1) % 4) } }
                     repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
@@ -519,25 +589,28 @@ private fun Symptoms(o: Onme, order: List<Symptom>, level: (Symptom) -> Int, col
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(if (picked.isEmpty()) "누르면 바로 저장돼요" else picked.joinToString { "${SymptomCopy.LABEL.getValue(it.first)} ${LEVEL[it.second]}" },
                 Modifier.weight(1f).padding(end = 20.dp), fontSize = 21.sp, color = SubText, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Row(Modifier.height(72.dp).clip(CircleShape).background(Point.copy(alpha = 0.18f)).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-                Glyph(Ic.CHECK, Accent, 20.dp); Spacer(Modifier.width(10.dp)); Text("자동 저장", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Accent)
-            }
+            Glyph(Ic.CHECK, Accent, 20.dp); Spacer(Modifier.width(8.dp)); Text("자동 저장돼요", fontSize = 19.sp, color = Accent)
         }
     }
 }
 
 @Composable
-private fun SymptomTile(label: String, v: Int, modifier: Modifier, onClick: () -> Unit) {
-    val fill = listOf(MainText.copy(alpha = 0.05f), Point.copy(alpha = 0.10f), Point.copy(alpha = 0.18f), Point.copy(alpha = 0.28f))[v]
-    val edge = listOf(MainText.copy(alpha = 0.07f), Point.copy(alpha = 0.45f), Point.copy(alpha = 0.6f), Point)[v]
-    Column(modifier.tap(onClick).clip(R26).background(fill).border(if (v == 3) 2.dp else 1.5.dp, edge, R26).padding(horizontal = 22.dp, vertical = 18.dp)) {
-        Row(verticalAlignment = Alignment.Top) {
-            Text(label, Modifier.weight(1f), fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
-            if (v > 0) Text(LEVEL[v], fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Accent)
-        }
+private fun SymptomTile(symptom: Symptom, label: String, v: Int, modifier: Modifier, onClick: () -> Unit) {
+    val on = v > 0
+    val deep = listOf(Color.Unspecified, Color(0xFF4F8F76), Color(0xFF3F8069), Color(0xFF285E4B))[v]
+    val fill = if (!on) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.62f)))
+        else Brush.verticalGradient(listOf(deep.copy(alpha = 0.92f), deep))
+    val edge = if (on) Color.White.copy(alpha = 0.35f) else MainText.copy(alpha = 0.06f)
+    val ink = if (on) Color.White else MainText
+    Column(modifier.tap(onClick).clip(R26).background(fill).border(1.5.dp, edge, R26).padding(horizontal = 22.dp, vertical = 18.dp)) {
+        Text(label, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = ink, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            (1..3).forEach { k -> Box(Modifier.weight(1f).height(10.dp).clip(CircleShape).background(if (k <= v) Point else MainText.copy(alpha = 0.12f))) }
+        Row(verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (on) Text(LEVEL[v], fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Color.White.copy(alpha = 0.9f))
+                Row { (1..3).forEach { k -> Box(Modifier.padding(end = 6.dp).size(12.dp).clip(CircleShape).background(if (on) Color.White.copy(alpha = if (k <= v) 1f else 0.3f) else MainText.copy(alpha = 0.12f))) } }
+            }
+            Box(Modifier.alpha(0.75f)) { Glyph(Ic.SYMPTOM.getValue(symptom), if (on) Color.White else SubText, if (compact) 56.dp else 76.dp, play = v, stroke = 0.9f) }
         }
     }
 }
@@ -588,7 +661,7 @@ fun PredictionModal(o: Onme, a: LocalDate, b: LocalDate) {
                 Spacer(Modifier.width(16.dp))
                 Column {
                     Text(x.label, fontSize = 25.sp, fontWeight = FontWeight.Bold, color = x.ink)
-                    Text(x.hint, fontSize = 18.sp, color = x.ink.copy(alpha = 0.75f))
+                    Text(x.hint, fontSize = 19.sp, color = x.ink.copy(alpha = 0.75f))
                 }
             }
             if (c) Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { ANSWERS.forEach { AnswerBtn(it, Modifier.fillMaxWidth()) } }
@@ -614,7 +687,7 @@ fun ColumnScope.Settings(o: Onme) {
             Toggle("상황 알림 카드", c.proactiveCards, Why.CARDS) { o.setConsents(c.copy(proactiveCards = it)) }
             Toggle("음성 안내", o.voiceOn, "알림과 휴식 안내를 차량 음성으로 읽어 드려요. 조용한 환경을 켜면 이번 주행 동안 꺼져요.") { o.voiceOn = it }
             if (o.user.cycleTracking) Toggle("배란 추정 표시 (가족계획)", o.user.familyPlanning, Why.FP) { o.setFamilyPlanning(it) }
-            Text("모든 기록은 이 차량의 내 프로필에만 암호화해 저장돼요.", fontSize = 17.sp, color = SubText)
+            Text("모든 기록은 이 차량의 내 프로필에만 암호화해 저장돼요.", fontSize = 19.sp, color = SubText)
         }
         Panel(side(1f), scroll = true) {
             H("데이터")
@@ -647,7 +720,7 @@ fun ColumnScope.Settings(o: Onme) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     listOf("ok" to "정상", "weak" to "위치 부정확", "none" to "결과 없음", "gps" to "위치 오류", "net" to "네트워크 오류").forEach { (v, l) -> Opt(l, o.demoSos == v) { o.demoSos = v } }
                 }
-                Text("가상 위치: 서울시청", fontSize = 17.sp, color = SubText)
+                Text("가상 위치: 서울시청", fontSize = 19.sp, color = SubText)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Btn("사용자 A 불러오기", Modifier.weight(1f), Kind.Quiet) { o.loadUserA() }
                     Btn("시연 초기화", Modifier.weight(1f), Kind.Quiet) { o.resetDemo() }
