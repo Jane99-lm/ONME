@@ -320,8 +320,20 @@ fun MoodDrop(m: MoodId, label: String, index: Int, still: Boolean = false, orb: 
             if (pressed) tween(110, easing = EaseOut) else spring(dampingRatio = 0.35f, stiffness = 420f), label = "squash")
         val hop = remember { Animatable(0f) }
         LaunchedEffect(lit) { if (lit && !calm) { hop.animateTo(1f, tween(140, easing = EaseOut)); hop.animateTo(0f, spring(dampingRatio = 0.45f, stiffness = 380f)) } }
+        Box(Modifier.size(orb)) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val lift = 1f - 0.35f * hop.value
+            val c = Offset(size.width / 2, size.height * 0.94f)
+            val w = size.width * 0.34f * lift * (1f + 0.08f * squash)
+            fun pool(color: Color, rx: Float, ry: Float) = drawOval(
+                Brush.radialGradient(listOf(color, Color.Transparent), c, rx),
+                Offset(c.x - rx, c.y - ry), androidx.compose.ui.geometry.Size(rx * 2, ry * 2))
+            scale(1f, 0.16f, c) { pool(Color(0xFF4FBF6A).copy(alpha = if (on) 0.55f else 0.32f), w * 1.55f, w * 1.55f) }
+            scale(1f, 0.2f, c) { pool(Color(0xFF173D28).copy(alpha = 0.42f * lift), w, w) }
+            scale(1f, 0.2f, c) { pool(Color(0xFF0E2A1B).copy(alpha = 0.5f * lift), w * 0.55f, w * 0.55f) }
+        }
         Box(
-            Modifier.size(orb).graphicsLayer {
+            Modifier.fillMaxSize().graphicsLayer {
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.92f)
                 scaleX = 1f + 0.07f * squash - 0.03f * hop.value
                 scaleY = 1f - 0.10f * squash + 0.05f * hop.value
@@ -331,6 +343,7 @@ fun MoodDrop(m: MoodId, label: String, index: Int, still: Boolean = false, orb: 
         ) {
             androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(moodArt(m)), null, Modifier.fillMaxSize())
             Blink(m, index, calm)
+        }
         }
         Spacer(Modifier.height(18.dp))
         Text(label, fontSize = 24.sp, fontWeight = FontWeight.Medium)
@@ -633,7 +646,11 @@ private fun ColumnScope.Confirm(o: Onme) {
     val running = o.applied || care !in VEHICLE_CARES
     Head(o, Copy.CARE_NAME.getValue(care))
     Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Bottom)) {
-        BearOrb(animate = o.parked, modifier = Modifier.weight(1f))
+        BearOrb(animate = o.parked, tone = when (phaseOn(o.user, o.today())?.first) {
+            com.onme.core.Phase.P1 -> OrbTone.CRIMSON
+            com.onme.core.Phase.P3 -> if (o.user.familyPlanning) OrbTone.BLUE else OrbTone.JADE
+            else -> OrbTone.JADE
+        }, modifier = Modifier.weight(1f))
         if (o.applied) Row(Modifier.height(40.dp).clip(CircleShape).background(Point).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             Glyph(Ic.CHECK, Bg, 18.dp); Spacer(Modifier.width(8.dp)); Text(Copy.APPLIED, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Bg)
         }
