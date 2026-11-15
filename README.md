@@ -1,133 +1,133 @@
 # 온미 | ONME
 
-A care app for women drivers on Hyundai **Pleos Connect** (Android Automotive OS). You pick how you feel, and ONME recommends one care the car can actually do right now, such as warming the seat, quieting the cabin, a short rest, or music. It also finds a nearby toilet or convenience store fast when you need one.
+현대 **Pleos Connect**(Android Automotive OS)에서 동작하는 여성 운전자 케어 앱입니다. 지금 기분을 고르면, 차가 지금 바로 할 수 있는 케어 하나를 추천해요. 예를 들면 시트 데우기, 조용한 차 안 만들기, 잠깐 쉬기, 음악 같은 것들이에요. 급할 때는 가까운 화장실이나 편의점을 빠르게 찾아 줍니다.
 
-Health data never leaves the car. It is stored encrypted, separately for each driver profile.
+건강 정보는 차 밖으로 나가지 않습니다. 운전자 프로필마다 따로 암호화해서 저장해요.
 
 ---
 
-## How it works
+## 동작 방식
 
-### 1. Mood → goal → recommendation (Mood Care)
+### 1. 기분 → 목표 → 추천 (Mood Care)
 
-1. On the home screen the driver taps one of six moods: 좋아요, 평온해요, 보통이에요, 지쳤어요, 울적해요, 예민해요.
-2. ONME picks a default goal for that mood (`defaultGoal`): 차분해지기, 기분 전환 or 기분 유지. The driver can switch to another allowed goal (`goalsFor`). Changing the goal recalculates right away.
-3. `recommend()` scores the seven cares: COMFORT, QUIET, RESET, REPLAY, PLACE, REST, MUSIC.
+1. 홈 화면에서 기분 6가지 중 하나를 누릅니다: 좋아요, 평온해요, 보통이에요, 지쳤어요, 울적해요, 예민해요.
+2. 온미가 그 기분에 맞는 기본 목표를 정합니다(`defaultGoal`): 차분해지기, 기분 전환, 기분 유지 중 하나예요. 운전자는 허용된 다른 목표로 바꿀 수 있고(`goalsFor`), 목표를 바꾸면 바로 다시 계산합니다.
+3. `recommend()`가 케어 7가지에 점수를 매깁니다: COMFORT, QUIET, RESET, REPLAY, PLACE, REST, MUSIC.
 
-**Step A – safety gate first (`isFeasible`).** A care that can't run right now is removed before scoring, so a high score never outweighs safety:
+**A단계 – 안전 조건을 먼저 확인 (`isFeasible`).** 지금 실행할 수 없는 케어는 점수를 매기기 전에 뺍니다. 그래서 점수가 아무리 높아도 안전 조건을 넘을 수 없어요.
 
-| Care | Shown only when |
+| 케어 | 보여 주는 조건 |
 |---|---|
-| COMFORT | vehicle control is allowed and the car has seat heat/vent or climate control |
-| QUIET | vehicle control is allowed and the car has fan or ambient-light control |
-| RESET | the car is parked |
-| REPLAY | a setting the driver rated 좋았어요 exists and the car supports part of it |
-| PLACE | location is allowed and found (and navigation is available while driving) |
-| REST | always |
-| MUSIC | music is allowed and supported, and the mood isn't 지쳤어요 |
+| COMFORT | 차량 제어에 동의했고, 차에 시트 열선·통풍이나 공조 제어가 있을 때 |
+| QUIET | 차량 제어에 동의했고, 차에 바람 세기나 실내 조명 제어가 있을 때 |
+| RESET | 정차 중일 때 |
+| REPLAY | 좋았어요로 평가한 설정이 있고, 차가 그중 일부라도 지원할 때 |
+| PLACE | 위치 사용에 동의했고 위치를 찾았을 때 (주행 중이면 내비 연동도 필요) |
+| REST | 항상 |
+| MUSIC | 음악 서비스에 동의했고 지원되며, 기분이 지쳤어요가 아닐 때 |
 
-**Step B – score (`score`).** Each remaining care gets 0–100:
+**B단계 – 점수 계산 (`score`).** 남은 케어마다 0–100점을 매깁니다.
 
 ```
 S = 0.30·M + 0.30·G + 0.20·P + 0.10·C + 0.10·D
 ```
 
-- **M** – how well the care fits the mood (lookup table)
-- **G** – how well it fits the goal (lookup table)
-- **P** – personal preference from past ratings (`preferenceScore`): starts at 50, each recent 좋았어요 adds 10, each 별로였어요 subtracts 15, over the last 5 ratings
-- **C** – cycle and symptom context (`cycleSymptomScore`), see section 2
-- **D** – 100 for every care that passed the gate
+- **M** – 케어가 기분에 얼마나 맞는지 (표에서 찾음)
+- **G** – 케어가 목표에 얼마나 맞는지 (표에서 찾음)
+- **P** – 지난 평가로 본 개인 선호 (`preferenceScore`): 50에서 시작해서, 최근 평가 5건 중 좋았어요 1건마다 +10, 별로였어요 1건마다 −15
+- **C** – 주기·증상 맥락 (`cycleSymptomScore`), 2장 참고
+- **D** – 안전 조건을 통과한 케어는 모두 100
 
-The sum is computed in integers (`S×10`) to avoid floating-point rounding errors.
+부동소수 반올림 오차를 피하려고 합계는 정수(`S×10`)로 계산합니다.
 
-**Step C – pick what to show.**
-- **Tired** (`fatigueRisk`: mood 지쳤어요, or sleepiness/fatigue logged today) → the main card is always **REST**, with a safety notice. No other care can override this.
-- **Top score ≥ 70** → that care is the main card. Up to two more cares are offered if they are within 5 points of it.
-- **Otherwise** → the available cares are shown as equal choices.
+**C단계 – 보여 줄 것 고르기.**
+- **피로할 때** (`fatigueRisk`: 기분이 지쳤어요이거나, 오늘 졸림·피로를 기록함) → 메인 카드는 항상 **REST**이고 안전 안내를 함께 보여 줍니다. 다른 케어가 이를 바꿀 수 없어요.
+- **1위 점수가 70 이상** → 그 케어가 메인 카드예요. 1위와 5점 미만 차이인 케어를 최대 2개까지 함께 보여 줍니다.
+- **그 외** → 가능한 케어를 동등한 선택지로 보여 줍니다.
 
-The screen never shows scores, cycle phases or symptom names, only action phrases such as "따뜻한 시트를 준비했어요".
+화면에는 점수, 주기 구간, 증상 이름을 보여 주지 않습니다. "따뜻한 시트를 준비했어요" 같은 행동 문구만 보여 줘요.
 
-### 2. Cycle prediction and context (Cycle)
+### 2. 주기 예측과 맥락 (Cycle)
 
-- `cycleLengths` takes the recorded period start dates and ignores gaps under 15 days or over 60 days.
-- `predictCycle` estimates the next start and a ± range:
-  - with no history, from the onboarding answers;
-  - with 1–2 cycles, a blend of history and answers;
-  - with 3 or more cycles, the median length, with the range from the spread.
-  - Irregular cycles get a wider range.
-- `phaseOf` places a day in one of these phases: P1 (period), P2–P4, P5 (the 6 days before the next start), OVERDUE, or PAUSED (pregnancy or postpartum).
-- `cycleSymptomScore` (C) is above 50 only when there is evidence the driver gave:
-  - **90** – a related symptom logged today (e.g. a stiff lower back → COMFORT);
-  - **65** – the same symptom showed up at the same point in 2 of the last 3 cycles;
-  - **60** – fewer than 3 cycles recorded, but onboarding said this phase is uncomfortable;
-  - **50** – everything else. ONME never guesses symptoms from the cycle alone.
+- `cycleLengths`는 기록된 생리 시작일로 주기 길이를 구하고, 15일 미만이나 60일 초과인 간격은 뺍니다.
+- `predictCycle`은 다음 시작일과 ± 범위를 예상합니다.
+  - 기록이 없으면 초기 질문 답변으로,
+  - 1–2주기면 기록과 답변을 섞어서,
+  - 3주기 이상이면 주기 길이의 중앙값으로 예상하고, 범위는 주기가 얼마나 들쭉날쭉한지로 정합니다.
+  - 주기가 불규칙하면 범위를 넓힙니다.
+- `phaseOf`는 날짜를 다음 구간 중 하나로 나눕니다: P1(생리 중), P2–P4, P5(다음 시작 전 6일), OVERDUE(예정일 지남), PAUSED(임신·출산 후).
+- `cycleSymptomScore`(C)는 운전자가 직접 남긴 근거가 있을 때만 50보다 높아집니다.
+  - **90** – 오늘 관련 증상을 기록함 (예: 허리 불편 → COMFORT)
+  - **65** – 최근 3주기 중 2주기에서 같은 시기에 같은 증상이 있었음
+  - **60** – 기록이 3주기 미만이지만, 초기 질문에서 이 시기가 불편하다고 답함
+  - **50** – 그 외 모든 경우. 온미는 주기만 보고 증상을 짐작하지 않습니다.
 
-Predictions are always shown as an expected range, never as fact, and are not for contraception.
+예측은 항상 확정이 아닌 예상 범위로 보여 주며, 피임 용도로 쓸 수 없습니다.
 
-### 3. Running a care
+### 3. 케어 실행
 
-- `buildCareAction` turns the chosen care into concrete settings (seat heat level, temperature, fan, lighting, playlist, places).
-- Nothing changes in the car until the driver taps **적용**. `CareRunner` saves the current values first so **되돌리기** can restore them.
-- Parts the car doesn't support are skipped (`supportedPart`). Seat position only changes while parked.
-- After 적용, the confirm screen shows the ONME character holding a glowing jade ball (`BearOrb`). The ball animates only while parked.
-- The next time the car is parked, ONME asks once for a rating: 좋았어요 / 보통 / 별로였어요. The answer feeds the P score next time.
+- `buildCareAction`이 고른 케어를 실제 설정(열선 단계, 온도, 바람, 조명, 플레이리스트, 장소)으로 바꿉니다.
+- 운전자가 **적용**을 누르기 전까지 차는 아무것도 바뀌지 않습니다. `CareRunner`가 바꾸기 전 값을 먼저 저장해 두어서 **되돌리기**로 원래대로 돌릴 수 있어요.
+- 차가 지원하지 않는 항목은 건너뜁니다(`supportedPart`). 시트 위치는 정차 중에만 바꿉니다.
+- 적용하고 나면 확인 화면에 빛나는 옥구슬을 안고 있는 온미 캐릭터(`BearOrb`)가 나옵니다. 구슬 애니메이션은 정차 중에만 움직여요.
+- 다음에 정차하면 한 번만 평가를 묻습니다: 좋았어요 / 보통 / 별로였어요. 이 답은 다음 추천의 P 점수에 반영됩니다.
 
-### 4. SOS – toilet or convenience store (급할 때)
+### 4. 급할 때 – 화장실·편의점 찾기 (SOS)
 
-1. The driver picks 화장실 or 편의점.
-2. `findSos` searches 1 → 3 → 5 → 10 km and stops widening once 3 usable places are found. Duplicates are removed (`dedup`).
-3. Each place gets an ETA: drive + park + walk (`totalEta`). Unknown parts are estimated and labelled "추정", never counted as 0 minutes.
-4. Places that are closed, blocked, or have unsafe parking are removed. The rest are scored (`scoreCandidate`):
-   - Toilet: `0.50·time + 0.30·open + 0.15·access + 0.05·reliability`
-   - Store: `0.50·time + 0.30·parking + 0.15·open + 0.05·reliability`
-5. The top 3 are shown (`rankCandidates`). Tapping one sends it to navigation (`PleosNavigation` → Pleos NaviHelper).
+1. 운전자가 화장실 또는 편의점을 고릅니다.
+2. `findSos`가 1 → 3 → 5 → 10km 순서로 찾고, 쓸 수 있는 곳이 3곳 모이면 더 넓히지 않습니다. 중복은 뺍니다(`dedup`).
+3. 장소마다 예상 소요 시간을 구합니다: 차량 이동 + 주차 + 도보 (`totalEta`). 모르는 구간은 추정하고 "추정"이라고 표시하며, 절대 0분으로 치지 않습니다.
+4. 문을 닫았거나, 이용할 수 없거나, 주차가 위험한 곳은 뺍니다. 남은 곳에 점수를 매깁니다(`scoreCandidate`).
+   - 화장실: `0.50·시간 + 0.30·개방 + 0.15·접근성 + 0.05·정보 신뢰도`
+   - 편의점: `0.50·시간 + 0.30·주차 + 0.15·개방 + 0.05·정보 신뢰도`
+5. 상위 3곳을 보여 줍니다(`rankCandidates`). 하나를 누르면 내비로 보냅니다(`PleosNavigation` → Pleos NaviHelper).
 
-Opening hours are checked against the expected **arrival** time. The wording never promises a place is open or that a parking spot is free.
+운영시간은 **도착 예정 시각** 기준으로 확인합니다. 열려 있다거나 빈 주차 자리가 있다고 장담하는 문구는 쓰지 않습니다.
 
-### 5. Situation cards
+### 5. 상황 알림 카드
 
-| Card | When |
+| 카드 | 언제 |
 |---|---|
-| TR1 – 오늘의 케어를 준비할까요? | before departure, if something relevant was logged today |
-| TR2 – 쉬어갈 곳을 경로에 추가할까요? | after a long continuous drive |
-| TR3 – 준비물을 확인해 보세요 | 2 days before the expected period range, parked only |
+| TR1 – 오늘의 케어를 준비할까요? | 출발 전, 오늘 관련 기록이 있을 때 |
+| TR2 – 쉬어갈 곳을 경로에 추가할까요? | 오래 이어서 운전했을 때 |
+| TR3 – 준비물을 확인해 보세요 | 생리 예상 범위 2일 전, 정차 중에만 |
 
-Tapping 나중에 hides that card for 24 hours, and at most 2 cards appear per drive.
+나중에를 누르면 그 카드는 24시간 동안 다시 나오지 않고, 한 번 주행할 때 최대 2장까지만 나옵니다.
 
-### 6. Driving safety
+### 6. 운전 안전
 
-- The driving state comes from the car's UX-restriction signal. **Unknown is treated as driving.**
-- While driving, only one-tap screens are available: home, goal, recommendation, confirm and SOS. Onboarding, the record, calendar, rest timer, feedback and settings screens close and say "안전하게 정차한 뒤 이용할 수 있어요". Anything typed so far is saved first.
-- ONME never sets a destination or changes the car on its own. The driver always taps first.
+- 주행 상태는 차의 UX 제한 신호로 판단합니다. **알 수 없으면 주행 중으로 봅니다.**
+- 주행 중에는 한 번 누르면 되는 화면만 쓸 수 있어요: 홈, 목표, 추천, 확인, 급할 때. 초기 질문, 기록, 캘린더, 휴식 타이머, 평가, 설정 화면은 닫히고 "안전하게 정차한 뒤 이용할 수 있어요"를 보여 줍니다. 입력하던 내용은 먼저 저장해요.
+- 온미는 스스로 목적지를 정하거나 차를 바꾸지 않습니다. 항상 운전자가 먼저 눌러야 해요.
 
-### 7. Privacy
+### 7. 개인정보
 
-- All data stays on the device, AES-GCM encrypted with an Android Keystore key, one file per driver profile (`SecureStore`).
-- Each data use has its own consent toggle in 설정. Turning one off immediately resets the related score (C = 50, P = default) and hides the cares that depend on it.
-- Logs never contain symptoms or dates. 설정 has full export and full delete.
+- 모든 데이터는 기기 안에만 있고, Android Keystore 키로 AES-GCM 암호화해서 운전자 프로필마다 파일 하나씩 저장합니다(`SecureStore`).
+- 데이터를 쓰는 항목마다 설정에 동의 토글이 따로 있습니다. 끄면 관련 점수가 바로 기본값(C = 50, P = 기본값)으로 돌아가고, 그 데이터가 필요한 케어는 숨겨집니다.
+- 로그에는 증상이나 날짜를 남기지 않습니다. 설정에서 전체 내보내기와 전체 삭제를 할 수 있어요.
 
-### 8. Demo mode
+### 8. 시연 모드
 
-Turn it on in 설정. It lets you switch between parked and driving, toggle which car features exist, use a fake location, and load a sample user with 6 cycles of history. Vehicle changes go to a simulated car when the emulator doesn't store them.
+설정에서 켭니다. 주행·정차 전환, 차량 기능 지원 여부 토글, 가상 위치, 6주기 기록이 있는 샘플 사용자 불러오기를 할 수 있어요. 에뮬레이터가 차량 설정을 저장하지 않으면 가상 차량에 적용합니다.
 
 ---
 
-## Project layout
+## 프로젝트 구성
 
 ```
-core/   Pure Kotlin, no Android: models, OnmeConfig (all weights and thresholds),
-        Mood Care, cycle prediction, SOS scoring, trigger rules, UI copy. Unit-tested on the JVM.
-app/    Jetpack Compose UI, Pleos vehicle / navigation / TTS adapters, Keystore storage, demo mode
-design/ Web design preview and asset tools
+core/   Android 의존성 없는 순수 Kotlin: 모델, OnmeConfig(모든 가중치·임계값),
+        Mood Care, 주기 예측, SOS 점수, 알림 규칙, 화면 문구. JVM 단위 테스트.
+app/    Jetpack Compose UI, Pleos 차량·내비·TTS 연동, Keystore 저장소, 시연 모드
+design/ 웹 디자인 미리보기와 에셋 도구
 ```
 
-All weights and thresholds live in `core/.../OnmeConfig.kt`. They are starting values and will change after testing.
+모든 가중치와 임계값은 `core/.../OnmeConfig.kt` 한 곳에 있습니다. 검증 전 초기값이라 테스트 후 바뀔 수 있어요.
 
-## Build and run
+## 빌드와 실행
 
 ```bash
-./gradlew :core:test          # core logic tests
-./gradlew :app:installDebug   # install on the Pleos Connect emulator
+./gradlew :core:test          # 핵심 로직 테스트
+./gradlew :app:installDebug   # Pleos Connect 에뮬레이터에 설치
 ```
 
-The 3D cycle model (`design/cycle/index.html`) isn't in the repo. Generate it with `design/tools/cycle.sh`.
+3D 주기 모델(`design/cycle/index.html`)은 저장소에 없습니다. `design/tools/cycle.sh`로 만들어 주세요.
