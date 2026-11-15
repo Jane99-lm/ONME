@@ -61,21 +61,17 @@ half4 main(float2 fc) {
 }
 """
 
-enum class OrbTone(val deep: Color, val milky: Color, val glow: Color) {
-    JADE(Color(0xFF216B42), Color(0xFF9EDBA8), Color(0xFF4FBF6A)),
-    CRIMSON(Color(0xFF730A1A), Color(0xFFEB6B75), Color(0xFFC0283C)),
-    BLUE(Color(0xFF14406E), Color(0xFF8EC2EE), Color(0xFF3F8FD8)),
+enum class OrbTone(val deep: Color, val milky: Color) {
+    JADE(Color(0xFF216B42), Color(0xFF9EDBA8)),
+    CRIMSON(Color(0xFF730A1A), Color(0xFFEB6B75)),
+    BLUE(Color(0xFF14406E), Color(0xFF8EC2EE)),
 }
 
 @Composable
 fun BearOrb(animate: Boolean, tone: OrbTone, modifier: Modifier = Modifier) {
     val deep by animateColorAsState(tone.deep, tween(1200), label = "deep")
     val milky by animateColorAsState(tone.milky, tween(1200), label = "milky")
-    val glow by animateColorAsState(tone.glow, tween(1200), label = "glow")
-    Box(modifier.aspectRatio(BEAR_W / BEAR_H, matchHeightConstraintsFirst = true).drawBehind {
-        val c = Offset(size.width * 0.5f, size.height * 0.6f)
-        drawCircle(Brush.radialGradient(listOf(glow.copy(alpha = 0.4f), glow.copy(alpha = 0.13f), Color.Transparent), c, size.width * 0.95f), size.width * 0.95f, c)
-    }) {
+    Box(modifier.aspectRatio(BEAR_W / BEAR_H, matchHeightConstraintsFirst = true)) {
         Image(painterResource(R.drawable.bear_base), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
         if (Build.VERSION.SDK_INT >= 33) Ball(animate, deep, milky)
         Image(painterResource(R.drawable.bear_hands), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)

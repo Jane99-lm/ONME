@@ -79,7 +79,6 @@ half4 main(float2 fc) {
 }
 """
 
-val JadeGround = Brush.linearGradient(listOf(Color(0xFFEAF4EE), Color(0xFFCFE7D9), Color(0xFFBFDECB)), Offset.Zero, Offset.Infinite)
 
 private class Liquid { var time by mutableFloatStateOf(12f); var origin = Offset.Zero; var size = androidx.compose.ui.geometry.Size.Zero }
 private val LocalLiquid = staticCompositionLocalOf<Liquid?> { null }
@@ -153,26 +152,6 @@ fun Modifier.glass(shape: Shape, strength: Float = 1f) = this
     .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.62f * strength), Color.White.copy(alpha = 0.34f * strength))), shape)
     .border(1.5.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.15f), StartRim)), shape)
 
-private val orbShader by lazy { if (Build.VERSION.SDK_INT >= 33) RuntimeShader(BALL) else null }
-
-fun Modifier.jadeOrb() = this
-    .drawBehind {
-        val sh = orbShader
-        if (sh != null && Build.VERSION.SDK_INT >= 33) {
-            sh.setFloatUniform("c", center.x, center.y)
-            sh.setFloatUniform("r", size.minDimension / 2)
-            sh.setFloatUniform("t", 4f)
-            sh.setFloatUniform("deep", 0.13f, 0.42f, 0.26f)
-            sh.setFloatUniform("milky", 0.62f, 0.86f, 0.66f)
-            sh.setFloatUniform("opacity", 0.42f)
-            sh.setFloatUniform("grain", 3.2f)
-            sh.setFloatUniform("vein", 0.3f)
-            drawCircle(ShaderBrush(sh))
-        } else drawCircle(Brush.radialGradient(0f to Color(0xAA9EDBA8), 0.55f to Color(0x994F9E70), 1f to Color(0xCC216B42), center = Offset(size.width * 0.45f, size.height * 0.4f), radius = size.minDimension * 0.62f))
-        drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.6f), Color.Transparent), Offset(size.width * 0.34f, size.height * 0.28f), size.minDimension * 0.2f))
-    }
-    .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.1f))), CircleShape)
-
 fun Modifier.bead(tint: Color) = this
     .drawBehind {
         val rim = Color(tint.red * 0.86f, tint.green * 0.88f, tint.blue * 0.88f)
@@ -186,5 +165,5 @@ fun Modifier.bead(tint: Color) = this
     }
     .border(1.5.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.0f))), CircleShape)
 
-private val StartRim = Color(0xFF3F8069).copy(alpha = 0.12f)
+private val StartRim = Accent.copy(alpha = 0.12f)
 private fun lerpWhite(c: Color, f: Float) = Color(c.red + (1 - c.red) * f, c.green + (1 - c.green) * f, c.blue + (1 - c.blue) * f)

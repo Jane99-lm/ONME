@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -303,7 +304,7 @@ fun ColumnScope.Calendar(o: Onme) {
         Box(dialMod.darkGlass(R40).border(if (ph?.first == Phase.P1) 1.5.dp else 0.dp, Point.copy(alpha = 0.6f), R40), contentAlignment = Alignment.Center) {
             CycleDial(f, last, mu, dayIdx, Modifier.fillMaxSize(0.86f).aspectRatio(1f))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(now, fontSize = 40.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp, color = if (ph?.first == Phase.P1) Accent else if (ph?.first == Phase.OVERDUE) SosRed else MainText)
+                Text(now, fontSize = 40.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp, color = if (ph?.first == Phase.P1) CrimsonInk else if (ph?.first == Phase.OVERDUE) SosInk else MainText)
                 Text(sub, fontSize = 19.sp, color = SubText)
             }
         }
@@ -321,7 +322,7 @@ fun ColumnScope.Calendar(o: Onme) {
         ) {
             CycleDial(f, last, mu, dayIdx, Modifier.fillMaxHeight().aspectRatio(1f))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(now, fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp, color = if (ph?.first == Phase.P1) Accent else if (ph?.first == Phase.OVERDUE) SosRed else MainText)
+                Text(now, fontSize = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp, color = if (ph?.first == Phase.P1) CrimsonInk else if (ph?.first == Phase.OVERDUE) SosInk else MainText)
                 Text(sub, fontSize = 19.sp, color = SubText)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     f?.takeIf { !it.paused }?.let { MiniChip("다음", "${it.rangeStart.format(MD)}–${it.rangeEnd.format(MD)}") }
@@ -381,7 +382,7 @@ private fun SmallStat(label: String, value: String, note: String?, modifier: Mod
 ) {
     Text(label, fontSize = 19.sp, color = SubText)
     Text(value, fontSize = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.5).sp)
-    note?.let { Text(it, fontSize = 19.sp, color = Accent) }
+    note?.let { Text(it, fontSize = 19.sp, color = Deep) }
     if (steps >= 0) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         (1..3).forEach { k -> Box(Modifier.weight(1f).height(10.dp).clip(CircleShape).background(if (k <= steps) Point else MainText.copy(alpha = 0.12f))) }
     }
@@ -425,7 +426,6 @@ private fun Legend(fill: Color?, label: String, edge: Color = Color.Transparent)
     Spacer(Modifier.width(8.dp)); Text(label, fontSize = if (compact) 18.sp else 19.sp, color = SubText)
 }
 
-private val Crimson = Color(0xFFC0283C)
 
 private enum class Band { PERIOD, PREDICTED, RANGE }
 
@@ -457,7 +457,7 @@ private fun DayCell(day: LocalDate?, u: UserData, f: CycleForecast?, today: Loca
         if (joinR) drawRect(col, Offset(center.x, top), Size(size.width - center.x, h))
         if (!joinL || !joinR) drawCircle(col, h / 2, center)
     }, contentAlignment = Alignment.Center) {
-        val fill = when { period -> Crimson.copy(alpha = 0.85f); ph?.first == Phase.P3 && u.familyPlanning -> Color(0xFF3F8FD8).copy(alpha = 0.25f); else -> Color.Transparent }
+        val fill = when { period -> Crimson.copy(alpha = 0.85f); ph?.first == Phase.P3 && u.familyPlanning -> Ovulation.copy(alpha = 0.25f); else -> Color.Transparent }
         Box(Modifier.size(dot).clip(CircleShape).background(fill).then(if (isToday) Modifier.border(2.5.dp, if (period) Color.White else MainText, CircleShape) else Modifier), contentAlignment = Alignment.Center) {
             Text("${day.dayOfMonth}", fontSize = if (compact) 20.sp else 24.sp, fontWeight = if (period || isToday) FontWeight.Bold else FontWeight.Medium,
                 color = when { period -> Color.White; band == Band.PREDICTED -> Crimson; else -> MainText })
@@ -484,7 +484,7 @@ fun ColumnScope.Record(o: Onme) {
     var flowTaps by remember { mutableIntStateOf(0) }
     LaunchedEffect(flowTaps) { if (flowTaps > 0) { delay(2000); flowBig = false } }
     val grow by animateFloatAsState(if (flowBig) 1f else 0f, spring(dampingRatio = 1f, stiffness = Spring.StiffnessLow), label = "flowSize")
-    @Composable fun Flow(m: Modifier = Modifier) = FlowPicker(m, flow) { flowBig = true; flowTaps++; o.setFlow(it) }
+    @Composable fun Flow(m: Modifier = Modifier) = FlowPicker(m, flow, small = !flowBig && !compact) { flowBig = true; flowTaps++; o.setFlow(it) }
     @Composable fun PeriodTiles(m: Modifier, tile: Modifier) {
         PeriodStat(dayN, m)
         if (dayN == null) PeriodBtn(Ic.DROP, "오늘 시작", true, false, tile) { o.startPeriod() }
@@ -499,7 +499,7 @@ fun ColumnScope.Record(o: Onme) {
     } else Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
         Column(Modifier.width(340.dp).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             PeriodStat(dayN, Modifier.fillMaxWidth().weight(0.4f + 0.6f * (1f - grow)))
-            Flow(Modifier.weight(0.45f + 0.55f * grow))
+            Flow(Modifier.weight(0.22f + 0.78f * grow))
             if (dayN == null) PeriodBtn(Ic.DROP, "오늘 시작", true, false, Modifier.fillMaxWidth().height(104.dp)) { o.startPeriod() }
             else PeriodBtn(Ic.CHECK, "오늘 끝남", true, false, Modifier.fillMaxWidth().height(104.dp)) { o.endPeriod() }
         }
@@ -511,13 +511,13 @@ fun ColumnScope.Record(o: Onme) {
 private fun PeriodStat(day: Int?, modifier: Modifier) {
     val on = day != null
     Column(
-        modifier.clip(R32).background(if (on) Brush.verticalGradient(listOf(Point.copy(alpha = 0.34f), Point.copy(alpha = 0.14f))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.6f))))
-            .border(1.5.dp, if (on) Point.copy(alpha = 0.7f) else MainText.copy(alpha = 0.06f), R32).padding(horizontal = 28.dp, vertical = 24.dp),
+        modifier.clip(R32).background(if (on) Brush.verticalGradient(listOf(Color(0xFFFBE6E9), Color(0xFFF6D6DB))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.6f))))
+            .border(1.5.dp, if (on) Crimson.copy(alpha = 0.3f) else MainText.copy(alpha = 0.06f), R32).padding(horizontal = 28.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("생리", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = if (on) Accent else SubText)
+        Text("생리", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = if (on) CrimsonInk else SubText)
         Spacer(Modifier.height(6.dp))
-        Text(if (on) "${day}일째" else "기록 없음", fontSize = if (compact) 36.sp else 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp, color = if (on) Accent else MainText)
+        Text(if (on) "${day}일째" else "기록 없음", fontSize = if (compact) 36.sp else 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp, color = if (on) CrimsonInk else MainText)
         if (!compact) {
             Spacer(Modifier.height(10.dp))
             Text(if (on) "끝나면 아래에서 눌러 주세요" else "시작하면 아래에서 눌러 주세요", fontSize = 19.sp, color = SubText, lineHeight = 26.sp)
@@ -528,25 +528,36 @@ private fun PeriodStat(day: Int?, modifier: Modifier) {
 private val FLOW = listOf("눌러서 기록", "적음", "보통", "많음")
 
 @Composable
-private fun FlowPicker(modifier: Modifier, level: Int?, onPick: (Int) -> Unit) {
+private fun FlowPicker(modifier: Modifier, level: Int?, small: Boolean = false, onPick: (Int) -> Unit) {
     val on = level != null
     val v = level ?: 0
-    val tint = listOf(Color.Unspecified, Color(0xFFD9707E), Color(0xFFC0283C), Color(0xFF8E1526))[v]
-    val ink = if (v > 0) Color.White else MainText
-    val fill = if (v == 0) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.62f))) else Brush.verticalGradient(listOf(tint.copy(alpha = 0.9f), tint))
+    val tint = listOf(Color.Unspecified, Color(0xFFF8DDE1), Color(0xFFF2C4CB), Color(0xFFEAA9B3))[v]
+    val ink = if (v > 0) CrimsonInk else MainText
+    val fill = if (v == 0) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.62f))) else SolidColor(tint)
     Column(
         modifier.fillMaxWidth().then(if (compact) Modifier.height(96.dp) else Modifier).alpha(if (on) 1f else 0.45f)
             .then(if (on) Modifier.tap { onPick((v + 1) % 4) } else Modifier)
-            .clip(R32).background(fill).border(1.5.dp, if (v > 0) Color.White.copy(alpha = 0.35f) else MainText.copy(alpha = 0.06f), R32)
-            .padding(horizontal = 26.dp, vertical = 22.dp),
+            .clip(R32).background(fill).border(1.5.dp, if (v > 0) CrimsonInk.copy(alpha = 0.15f) else MainText.copy(alpha = 0.06f), R32)
+            .padding(horizontal = 26.dp, vertical = if (small) 14.dp else 22.dp),
+        verticalArrangement = if (small) Arrangement.Center else Arrangement.Top,
     ) {
-        Text("생리량", fontSize = 21.sp, fontWeight = FontWeight.Medium, color = if (v > 0) Color.White.copy(alpha = 0.85f) else SubText)
+        if (small) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("생리량", fontSize = 19.sp, color = if (v > 0) CrimsonInk else SubText)
+                    Text(FLOW[v], fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = ink)
+                }
+                (1..3).forEach { k -> Box(Modifier.padding(start = 6.dp).size(10.dp).clip(CircleShape).background(if (v > 0) CrimsonInk.copy(alpha = if (k <= v) 1f else 0.2f) else MainText.copy(alpha = 0.12f))) }
+            }
+            return@Column
+        }
+        Text("생리량", fontSize = 21.sp, fontWeight = FontWeight.Medium, color = if (v > 0) CrimsonInk else SubText)
         Text(if (on) FLOW[v] else "시작하면 기록할 수 있어요", fontSize = if (on) (if (compact) 30.sp else 40.sp) else 21.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.6).sp, color = ink)
         Spacer(Modifier.weight(1f))
         Row(verticalAlignment = Alignment.Bottom) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (on) Text("누를 때마다 바뀌어요", fontSize = 19.sp, color = if (v > 0) Color.White.copy(alpha = 0.85f) else SubText)
-                Row { (1..3).forEach { k -> Box(Modifier.padding(end = 6.dp).size(12.dp).clip(CircleShape).background(if (v > 0) Color.White.copy(alpha = if (k <= v) 1f else 0.3f) else MainText.copy(alpha = 0.12f))) } }
+                if (on) Text("누를 때마다 바뀌어요", fontSize = 19.sp, color = if (v > 0) CrimsonInk else SubText)
+                Row { (1..3).forEach { k -> Box(Modifier.padding(end = 6.dp).size(12.dp).clip(CircleShape).background(if (v > 0) CrimsonInk.copy(alpha = if (k <= v) 1f else 0.2f) else MainText.copy(alpha = 0.12f))) } }
             }
             Box(Modifier.alpha(0.75f)) { Glyph(Ic.DROP, ink, if (compact) 48.dp else 76.dp, play = v, stroke = 0.9f) }
         }
@@ -555,14 +566,14 @@ private fun FlowPicker(modifier: Modifier, level: Int?, onPick: (Int) -> Unit) {
 
 @Composable
 private fun PeriodBtn(icon: AnimIcon, label: String, primary: Boolean, done: Boolean, modifier: Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    val bg = when { primary -> Deep; done -> Point.copy(alpha = 0.16f); else -> Color.White.copy(alpha = 0.7f) }
-    val ink = if (primary) Color.White else if (done) Accent else MainText
+    val bg = when { primary -> Point; done -> Point.copy(alpha = 0.16f); else -> Color.White.copy(alpha = 0.7f) }
+    val ink = if (primary) Deep else if (done) Accent else MainText
     Row(
         modifier.alpha(if (enabled) 1f else 0.4f).then(if (enabled) Modifier.tap(onClick) else Modifier).clip(R32).background(bg)
             .border(1.dp, if (primary) Accent.copy(alpha = 0.55f) else MainText.copy(alpha = 0.08f), R32).padding(horizontal = 24.dp),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
-        Glyph(icon, if (primary) Color.White else Accent, 32.dp, play = done)
+        Glyph(icon, Deep, 32.dp, play = done)
         Spacer(Modifier.width(12.dp))
         Text(label, fontSize = if (compact) 22.sp else 26.sp, fontWeight = FontWeight.SemiBold, color = ink)
     }
@@ -589,7 +600,7 @@ private fun Symptoms(o: Onme, order: List<Symptom>, level: (Symptom) -> Int, col
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(if (picked.isEmpty()) "누르면 바로 저장돼요" else picked.joinToString { "${SymptomCopy.LABEL.getValue(it.first)} ${LEVEL[it.second]}" },
                 Modifier.weight(1f).padding(end = 20.dp), fontSize = 21.sp, color = SubText, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Glyph(Ic.CHECK, Accent, 20.dp); Spacer(Modifier.width(8.dp)); Text("자동 저장돼요", fontSize = 19.sp, color = Accent)
+            Glyph(Ic.CHECK, Accent, 20.dp); Spacer(Modifier.width(8.dp)); Text("자동 저장돼요", fontSize = 19.sp, color = Deep)
         }
     }
 }
@@ -597,7 +608,7 @@ private fun Symptoms(o: Onme, order: List<Symptom>, level: (Symptom) -> Int, col
 @Composable
 private fun SymptomTile(symptom: Symptom, label: String, v: Int, modifier: Modifier, onClick: () -> Unit) {
     val on = v > 0
-    val deep = listOf(Color.Unspecified, Color(0xFF4F8F76), Color(0xFF3F8069), Color(0xFF285E4B))[v]
+    val deep = listOf(Color.Unspecified, Color(0xFF4F8F76), Accent, Color(0xFF285E4B))[v]
     val fill = if (!on) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.92f), Color.White.copy(alpha = 0.62f)))
         else Brush.verticalGradient(listOf(deep.copy(alpha = 0.92f), deep))
     val edge = if (on) Color.White.copy(alpha = 0.35f) else MainText.copy(alpha = 0.06f)

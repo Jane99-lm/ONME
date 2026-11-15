@@ -58,19 +58,6 @@ import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-val Bg = Color(0xFF0D1715)
-val Pale = Color(0xFFEEF7F3)
-val CardBg = Color.White
-val Accent = Color(0xFF3F8069)
-val Point = Color(0xFF9DD5BD)
-val MainText = Color(0xFF16302A)
-val SubText = Color(0xFF46655A)
-val Mint = Color(0xFF7FC0A5)
-val Deep = Color(0xFF2F6B55)
-val SosRed = Color(0xFFD2646B)
-private val StartInk = Color(0xFF16302A)
-private val StartSub = Color(0xFF46655A)
-private val StartBrand = Color(0xFF3F8069)
 val EaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 val LocalCompact = staticCompositionLocalOf { false }
 val compact: Boolean @Composable get() = LocalCompact.current
@@ -174,7 +161,7 @@ enum class Kind { Primary, Quiet, Danger }
 fun Btn(text: String, modifier: Modifier = Modifier, kind: Kind = Kind.Primary, height: Dp = 84.dp, onClick: () -> Unit) {
     val view = androidx.compose.ui.platform.LocalView.current
     val press = if (kind == Kind.Primary && android.os.Build.VERSION.SDK_INT >= 30) { { view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM); onClick() } } else onClick
-    val bg = when (kind) { Kind.Primary -> Deep; Kind.Quiet -> MainText.copy(alpha = 0.08f); Kind.Danger -> SosRed.copy(alpha = 0.22f) }
+    val bg = when (kind) { Kind.Primary -> Accent; Kind.Quiet -> MainText.copy(alpha = 0.08f); Kind.Danger -> SosRed.copy(alpha = 0.22f) }
     val edge = when (kind) { Kind.Danger -> SosRed.copy(alpha = 0.55f); Kind.Quiet -> MainText.copy(alpha = 0.16f); else -> Color.White.copy(alpha = 0.25f) }
     Row(
         modifier.tap(press).height(height).clip(CircleShape).background(bg).border(1.dp, edge, CircleShape)
@@ -218,8 +205,8 @@ fun Head(o: Onme, title: @Composable RowScope.() -> Unit, right: @Composable Row
 
 @Composable
 fun CareBadge(care: CareId, size: Dp, icon: Dp) {
-    Box(Modifier.size(size).bead(Color(0xFF6DBF94)), contentAlignment = Alignment.Center) {
-        Glyph(Ic.CARE.getValue(care), Color(0xFF0F3D2C), icon, play = care)
+    Box(Modifier.size(size).background(Point.copy(alpha = 0.35f), CircleShape), contentAlignment = Alignment.Center) {
+        Glyph(Ic.CARE.getValue(care), Deep, icon, play = care)
     }
 }
 
@@ -380,7 +367,7 @@ private fun Rail(o: Onme, modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Column(Modifier.tap { o.switchProfile() }.size(cell), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Box(Modifier.size(if (c) 44.dp else 56.dp).jadeOrb(), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(if (c) 44.dp else 56.dp).background(avatarColor(o, p), CircleShape), contentAlignment = Alignment.Center) {
                 Text(p.role.take(1), fontSize = if (c) 18.sp else 22.sp, fontWeight = FontWeight.Bold, color = MainText)
             }
             Spacer(Modifier.height(if (c) 4.dp else 8.dp))
@@ -415,12 +402,12 @@ private fun Rail(o: Onme, modifier: Modifier) {
 private fun RailItem(icon: AnimIcon, label: String, on: Boolean, onClick: () -> Unit) {
     val c = compact
     Column(
-        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Deep else Color.Transparent).border(1.5.dp, if (on) Deep else Accent.copy(alpha = 0.32f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
+        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Point.copy(alpha = 0.55f) else Color.Transparent).border(1.5.dp, if (on) Accent.copy(alpha = 0.6f) else Accent.copy(alpha = 0.32f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) {
-        Glyph(icon, if (on) Color.White else Accent, if (c) 26.dp else 30.dp, play = on)
+        Glyph(icon, if (on) Deep else Accent, if (c) 26.dp else 30.dp, play = on)
         Spacer(Modifier.height(if (c) 4.dp else 8.dp))
-        Text(label, fontSize = if (c) 18.sp else 19.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium, color = if (on) Color.White else SubText)
+        Text(label, fontSize = if (c) 18.sp else 19.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium, color = if (on) Deep else SubText)
     }
 }
 
@@ -465,7 +452,7 @@ private fun DemoBar(o: Onme, modifier: Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            Text("시연", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Accent)
+            Text("시연", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Deep)
             Seg(listOf(DrivingState.PARKED to "정차", DrivingState.DRIVING to "주행", DrivingState.UNKNOWN to "신호 없음"), o.demoDriving, 56.dp) { o.demoDriving = it }
             if (!narrow) DemoExtras(o, md)
             Spacer(Modifier.weight(1f))
@@ -572,7 +559,7 @@ private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: S
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(10.dp).background(if (notice != null) tone else Accent, CircleShape))
             Spacer(Modifier.width(10.dp))
-            Text(if (notice != null) "먼저 쉬어가요" else "지금 가장 잘 맞아요", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Accent)
+            Text(if (notice != null) "먼저 쉬어가요" else "지금 가장 잘 맞아요", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Deep)
         }
         Text(o.preview(care).headline, fontSize = if (c) 38.sp else 54.sp, fontWeight = FontWeight.SemiBold, lineHeight = if (c) 48.sp else 66.sp, letterSpacing = (-1.2).sp)
         Text(tags.joinToString("  ·  "), fontSize = 20.sp, color = SubText)
@@ -583,7 +570,7 @@ private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: S
             dets.forEachIndexed { i, d ->
                 Row(Modifier.height(IntrinsicSize.Min), verticalAlignment = Alignment.Top) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(Modifier.size(36.dp).jadeOrb(), contentAlignment = Alignment.Center) { Glyph(Ic.CARE.getValue(care), Color.White, 20.dp) }
+                        Box(Modifier.size(36.dp).background(Point.copy(alpha = 0.35f), CircleShape), contentAlignment = Alignment.Center) { Glyph(Ic.CARE.getValue(care), Deep, 20.dp) }
                         if (i < dets.lastIndex) Box(Modifier.width(2.dp).weight(1f).background(Point.copy(alpha = 0.6f)))
                     }
                     Spacer(Modifier.width(18.dp))
@@ -595,7 +582,6 @@ private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: S
     }
     Box(modifier.clip(R40).background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.85f), tone.copy(alpha = 0.28f)), Offset.Zero, Offset.Infinite))
         .border(1.5.dp, Brush.linearGradient(listOf(Color.White, tone.copy(alpha = 0.5f)), Offset.Zero, Offset.Infinite), R40)) {
-        Box(Modifier.align(Alignment.BottomStart).offset(x = (-40).dp, y = 60.dp).graphicsLayer { alpha = 0.10f; rotationZ = -12f }) { Glyph(Ic.CARE.getValue(care), Accent, if (c) 220.dp else 320.dp) }
         if (c) Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             Head(Modifier.fillMaxWidth())
             Plan(Modifier.fillMaxWidth().weight(1f))
@@ -614,7 +600,7 @@ private fun OtherRow(o: Onme, care: CareId, alsoGood: Boolean, modifier: Modifie
         CareBadge(care, if (c) 60.dp else 68.dp, if (c) 28.dp else 32.dp)
         Spacer(Modifier.width(18.dp))
         Column(Modifier.weight(1f)) {
-            if (alsoGood) Text("이것도 괜찮아요", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Accent)
+            if (alsoGood) Text("이것도 괜찮아요", fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Deep)
             Text(Copy.CARE_NAME.getValue(care), fontSize = if (c) 22.sp else 25.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             Text(details(o, care).first(), fontSize = 19.sp, color = SubText, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
@@ -623,18 +609,31 @@ private fun OtherRow(o: Onme, care: CareId, alsoGood: Boolean, modifier: Modifie
 }
 
 @Composable
-private fun DataCard(label: String, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) =
-    Column(modifier.darkGlass(R32).padding(horizontal = 28.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, fontSize = 19.sp, color = SubText)
-        content()
-    }
-
-@Composable
-private fun CabinCard(o: Onme, modifier: Modifier) {
+private fun CabinPanel(o: Onme, set: VehicleSettings?, modifier: Modifier) {
     val cab by o.cabin.collectAsState()
-    DataCard("지금 차 안", modifier) {
-        Text("${cab.cabinTempC}°C", fontSize = 46.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
-        Text("열선 ${cab.seatHeatLevel}단계 · 통풍 ${cab.seatVentLevel}단계 · 바람 ${cab.fanLevel}단계" + if (cab.ambientDim) " · 조명 낮춤" else "", fontSize = 19.sp, color = SubText, lineHeight = 28.sp)
+    @Composable fun Meter(label: String, level: Int, max: Int, changed: Boolean, m: Modifier) = Column(m, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(label, fontSize = 20.sp, color = if (changed) Deep else SubText, fontWeight = if (changed) FontWeight.SemiBold else FontWeight.Normal)
+            Spacer(Modifier.weight(1f))
+            Text("$level", fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = if (changed) Deep else MainText)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            repeat(max) { k -> Box(Modifier.weight(1f).height(10.dp).clip(CircleShape).background(if (k < level) (if (changed) Accent else Mint) else MainText.copy(alpha = 0.08f))) }
+        }
+    }
+    Row(modifier.darkGlass(R40).padding(horizontal = 36.dp, vertical = 28.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(36.dp)) {
+        Column {
+            Text("지금 차 안", fontSize = 19.sp, color = SubText)
+            Row(verticalAlignment = Alignment.Top) {
+                Text("${cab.cabinTempC}", fontSize = if (compact) 48.sp else 64.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-2).sp, color = if (set?.cabinTempC != null) Deep else MainText)
+                Text("°", fontSize = 32.sp, color = SubText)
+            }
+            if (cab.ambientDim) Text("조명 낮춤", fontSize = 19.sp, color = if (set?.ambientDim != null) Deep else SubText)
+        }
+        Box(Modifier.width(1.dp).fillMaxHeight().background(MainText.copy(alpha = 0.08f)))
+        Meter("열선", cab.seatHeatLevel, 3, set?.seatHeatLevel != null, Modifier.weight(1f))
+        Meter("통풍", cab.seatVentLevel, 3, set?.seatVentLevel != null, Modifier.weight(1f))
+        Meter("바람", cab.fanLevel, 8, set?.fanLevel != null, Modifier.weight(1.4f))
     }
 }
 
@@ -679,20 +678,18 @@ private fun ColumnScope.Confirm(o: Onme) {
         if (!running) Text("적용하는 중이에요", fontSize = 21.sp, color = SubText)
     }
     Spacer(Modifier.height(20.dp))
-    val action: @Composable (Modifier) -> Unit = { m -> ActionCard(o, a, m) }
-    val third: @Composable (Modifier) -> Unit = { m ->
-        DataCard(if (care in VEHICLE_CARES) "바뀐 설정" else "안내", m) {
-            val lines = if (care in VEHICLE_CARES) summary(a.settings) + listOfNotNull("이번 주행 동안 온미 알림 끄기".takeIf { a.quietDrive }) else details(o, care)
-            lines.forEach { d -> Row(verticalAlignment = Alignment.CenterVertically) { Glyph(Ic.CARE.getValue(care), Accent, 24.dp); Spacer(Modifier.width(12.dp)); Text(d, fontSize = 21.sp, color = SubText) } }
+    val info: @Composable (Modifier) -> Unit = { m ->
+        if (care in VEHICLE_CARES) CabinPanel(o, a.settings, m)
+        else Column(m.darkGlass(R40).padding(horizontal = 36.dp, vertical = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
+            details(o, care).forEach { d -> Text(d, fontSize = 23.sp, fontWeight = FontWeight.Medium, lineHeight = 31.sp) }
         }
     }
     if (c) Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        action(Modifier.fillMaxWidth())
-        Row(Modifier.height(200.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) { CabinCard(o, Modifier.weight(1f).fillMaxHeight()); third(Modifier.weight(1f).fillMaxHeight()) }
-    } else Row(Modifier.fillMaxWidth().height(250.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        action(Modifier.weight(1.3f).fillMaxHeight())
-        CabinCard(o, Modifier.weight(1f).fillMaxHeight())
-        third(Modifier.weight(1f).fillMaxHeight())
+        info(Modifier.fillMaxWidth().height(170.dp))
+        ActionCard(o, a, Modifier.fillMaxWidth())
+    } else Row(Modifier.fillMaxWidth().height(190.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        info(Modifier.weight(1f).fillMaxHeight())
+        ActionCard(o, a, Modifier.width(360.dp).fillMaxHeight())
     }
 }
 
@@ -701,36 +698,29 @@ private val VEHICLE_CARES = setOf(CareId.COMFORT, CareId.QUIET, CareId.REPLAY)
 @Composable
 private fun ActionCard(o: Onme, a: CareAction, modifier: Modifier) {
     val (yes, no) = Copy.BUTTONS.getValue(a.care)
-    DataCard("다음", modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
         when (a.care) {
             CareId.COMFORT, CareId.QUIET, CareId.REPLAY -> {
-                Spacer(Modifier.weight(1f))
-                if (o.applied) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Btn("확인", Modifier.weight(1f), height = 84.dp) { o.go(Screen.HOME) }
-                    Btn(Copy.REVERT, Modifier.weight(1f), Kind.Quiet, height = 84.dp) { o.revert(); o.go(Screen.RESULT) }
+                if (o.applied) {
+                    Btn("확인", Modifier.fillMaxWidth(), height = 84.dp) { o.go(Screen.HOME) }
+                    Btn(Copy.REVERT, Modifier.fillMaxWidth(), Kind.Quiet, height = 72.dp) { o.revert(); o.go(Screen.RESULT) }
                 } else Btn(no, Modifier.fillMaxWidth(), Kind.Quiet, height = 84.dp) { o.go(Screen.RESULT) }
             }
             CareId.PLACE -> {
                 if (a.sosToilet) Btn(yes, Modifier.fillMaxWidth(), height = 72.dp) { o.confirm() }
                 else a.placeKinds.take(2).forEach { k -> MiniAction(Ic.CARE.getValue(CareId.PLACE), "근처 $k") { o.sendPlace(k) } }
-                Spacer(Modifier.weight(1f))
                 Text(no, Modifier.tap { o.go(Screen.HOME) }.padding(vertical = 6.dp), fontSize = 20.sp, color = SubText)
             }
             CareId.MUSIC -> {
                 o.playlists.take(2).forEach { p -> MiniAction(Ic.CARE.getValue(CareId.MUSIC), p.title) { o.openPlaylist(p) } }
-                Spacer(Modifier.weight(1f))
                 Text(no, Modifier.tap { o.go(Screen.HOME) }.padding(vertical = 6.dp), fontSize = 20.sp, color = SubText)
             }
             CareId.REST -> {
-                Spacer(Modifier.weight(1f))
                 Btn(if (o.parked) "10분 쉬기" else yes, Modifier.fillMaxWidth(), height = 84.dp) { o.confirm() }
             }
             CareId.RESET -> {
-                Spacer(Modifier.weight(1f))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Btn(yes, Modifier.weight(1f), height = 84.dp) { o.confirm() }
-                    Btn(no, Modifier.weight(1f), Kind.Quiet, height = 84.dp) { o.go(Screen.HOME) }
-                }
+                Btn(yes, Modifier.fillMaxWidth(), height = 84.dp) { o.confirm() }
+                Btn(no, Modifier.fillMaxWidth(), Kind.Quiet, height = 72.dp) { o.go(Screen.HOME) }
             }
         }
     }
@@ -846,7 +836,7 @@ private fun SosRow(o: Onme, c: SosCandidate) {
                 if (c.category == SosCategory.TOILET) Text(SosCopy.access(c.accessStatus), fontSize = 19.sp, color = SubText)
                 Text(SosCopy.reliability(c.reliability), fontSize = 19.sp, color = SubText)
             }
-            Text(if (open) "접기" else "자세히", Modifier.tap { open = !open }.padding(vertical = 10.dp), fontSize = 19.sp, color = Accent)
+            Text(if (open) "접기" else "자세히", Modifier.tap { open = !open }.padding(vertical = 10.dp), fontSize = 19.sp, color = Deep)
         }
     }
 }
@@ -859,13 +849,16 @@ private fun Loading() {
         Modifier.fillMaxSize().graphicsLayer { alpha = t.value; val s = 0.95f + 0.05f * t.value; scaleX = s; scaleY = s },
         verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("온미", fontSize = 88.sp, fontWeight = FontWeight.Bold, color = StartBrand, letterSpacing = (-1).sp)
-        Text("ONME", fontSize = 22.sp, letterSpacing = 10.sp, color = StartSub)
+        Text("온미", fontSize = 88.sp, fontWeight = FontWeight.Bold, color = Accent, letterSpacing = (-1).sp)
+        Text("ONME", fontSize = 22.sp, letterSpacing = 10.sp, color = SubText)
         Spacer(Modifier.height(56.dp))
-        LinearProgressIndicator(Modifier.width(120.dp).height(3.dp).clip(CircleShape), color = StartBrand, trackColor = Point.copy(alpha = 0.3f))
+        LinearProgressIndicator(Modifier.width(120.dp).height(3.dp).clip(CircleShape), color = Accent, trackColor = Point.copy(alpha = 0.3f))
     }
 }
 
+
+private val AVATARS = listOf(Color(0xFFBFE8D6), Color(0xFFC9D9F0), Color(0xFFF5D6C8), Color(0xFFDCD3F0))
+private fun avatarColor(o: Onme, p: Profile) = AVATARS[o.profiles.indexOf(p).coerceAtLeast(0) % AVATARS.size]
 
 private fun greeting(hour: Int) = when (hour) {
     in 5..10 -> "좋은 아침이에요"
@@ -880,35 +873,35 @@ private fun ProfilePick(o: Onme) {
     val hour = remember { java.time.LocalTime.now().hour }
     Box(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 44.dp)) {
         Row(Modifier.align(Alignment.TopStart), verticalAlignment = Alignment.Bottom) {
-            Text("온미", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = StartBrand, letterSpacing = (-0.5).sp)
+            Text("온미", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Accent, letterSpacing = (-0.5).sp)
             Spacer(Modifier.width(10.dp))
-            Text("ONME", fontSize = 14.sp, letterSpacing = 3.sp, color = StartSub, modifier = Modifier.padding(bottom = 5.dp))
+            Text("ONME", fontSize = 14.sp, letterSpacing = 3.sp, color = SubText, modifier = Modifier.padding(bottom = 5.dp))
         }
         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(greeting(hour), fontSize = 22.sp, color = StartSub)
+            Text(greeting(hour), fontSize = 22.sp, color = SubText)
             Spacer(Modifier.height(10.dp))
             val c = compact
             val bead = if (c) 84.dp else 112.dp
-            Text("누가 운전하나요?", fontSize = if (c) 40.sp else 46.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp, color = StartInk)
+            Text("누가 운전하나요?", fontSize = if (c) 40.sp else 46.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp, color = MainText)
             Spacer(Modifier.height(56.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(if (c) 16.dp else 28.dp)) {
                 o.profiles.forEach { p ->
                     ProfileCard(p.role, { o.selectProfile(p) }) {
-                        Box(Modifier.size(bead).jadeOrb(), contentAlignment = Alignment.Center) {
-                            Text(p.role.take(1), fontSize = if (c) 36.sp else 46.sp, fontWeight = FontWeight.SemiBold, color = StartInk)
+                        Box(Modifier.size(bead).background(avatarColor(o, p), CircleShape), contentAlignment = Alignment.Center) {
+                            Text(p.role.take(1), fontSize = if (c) 36.sp else 46.sp, fontWeight = FontWeight.SemiBold, color = MainText)
                         }
                     }
                 }
                 ProfileCard("프로필 추가", { addNote = true }, quiet = true) {
                     Box(Modifier.size(bead).glass(CircleShape, 0.6f), contentAlignment = Alignment.Center) {
-                        Glyph(Ic.PLUS, StartSub, 34.dp)
+                        Glyph(Ic.PLUS, SubText, 34.dp)
                     }
                 }
             }
         }
         Text(
             if (addNote) "프로필은 휴대폰 앱에서 추가할 수 있어요 (준비 중)" else "각 프로필의 기록은 이 차량에 따로 보관돼요",
-            Modifier.align(Alignment.BottomCenter), fontSize = 19.sp, color = StartSub,
+            Modifier.align(Alignment.BottomCenter), fontSize = 19.sp, color = SubText,
         )
     }
 }
@@ -927,12 +920,12 @@ private fun ProfileCard(label: String, onClick: () -> Unit, quiet: Boolean = fal
         strength = if (quiet) 0.55f else 1f,
     ) {
         Column(
-            Modifier.fillMaxSize().then(if (pressed) Modifier.border(2.dp, StartBrand, CardShape) else Modifier),
+            Modifier.fillMaxSize().then(if (pressed) Modifier.border(2.dp, Accent, CardShape) else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
         ) {
             avatar()
             Spacer(Modifier.height(if (compact) 16.dp else 24.dp))
-            Text(label, fontSize = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.Medium, color = if (quiet) StartSub else StartInk)
+            Text(label, fontSize = if (compact) 20.sp else 24.sp, fontWeight = FontWeight.Medium, color = if (quiet) SubText else MainText)
         }
     }
 }
