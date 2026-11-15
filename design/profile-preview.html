@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>온미 · 미리보기</title>
+<style>
+  @font-face { font-family:'NanumBarunpen'; src:url('fonts/NanumBarunpenR.woff') format('woff'); font-weight:100 500; font-display:block; }
+  @font-face { font-family:'NanumBarunpen'; src:url('fonts/NanumBarunpenB.woff') format('woff'); font-weight:600 900; font-display:block; }
+  #frame, #frame * { font-family:'NanumBarunpen', 'Apple SD Gothic Neo', sans-serif; }
+  :root { --ink:#16302A; --sub:#5B7A6E; --brand:#3F8069; --pale:#EEF7F3; }
+  html, body { margin:0; height:100%; background:#0b0f0e; font-family:"Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif; }
+  body { display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  
+  #display { width:2560px; height:1440px; position:relative; flex:none; transform-origin:center; background:#f7f7f7; overflow:hidden; border-radius:18px;
+             box-shadow:0 0 0 10px #1a1d1c, 0 30px 80px rgba(0,0,0,.6); }
+  #gl { display:none; }
+  #frame:has(#ui:not(.hidden)) #gl { display:block; }
+  #frame { background:#fff; width:1794px; height:1291px; position:absolute; left:853px; top:90px; transform:scale(.9375); transform-origin:0 0; overflow:hidden; }
+  .cluster { position:absolute; left:0; top:0; width:853px; height:1300px; background:#f7f7f7; border-right:1px solid #e4e4e4; color:#222; font-family:system-ui,sans-serif; }
+  .cluster .top { display:flex; justify-content:space-between; padding:28px 28px 0; font-size:30px; color:#555; }
+  .cluster .prnd b { background:#333; color:#fff; padding:2px 10px; margin-right:8px; font-weight:400; }
+  .cluster .car { position:absolute; left:150px; top:480px; width:540px; height:300px; border-radius:140px 160px 60px 60px;
+                  background:linear-gradient(#e9e9e9,#bdbdbd); box-shadow:0 40px 40px -20px rgba(0,0,0,.25); }
+  .cluster .media { position:absolute; left:0; right:0; bottom:0; height:180px; background:#fff; border-top:1px solid #e4e4e4;
+                    display:flex; align-items:center; gap:24px; padding:0 22px; font-size:28px; color:#333; }
+  .cluster .media i { width:104px; height:104px; background:#efefef; display:inline-block; }
+  .status { position:absolute; left:853px; right:0; top:0; height:89px; background:#f7f7f7; border-bottom:1px solid #ddd; font-family:system-ui,sans-serif;
+            display:flex; align-items:center; justify-content:flex-end; gap:40px; padding:0 20px; font-size:30px; color:#222; }
+  .status .me { width:56px; height:56px; border-radius:50%; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; color:#a03ab8; font-size:26px; }
+  .dock { position:absolute; left:0; right:0; bottom:0; height:140px; background:#000; display:flex; align-items:center; justify-content:center; gap:40px; }
+  .dock i { width:76px; height:76px; border-radius:10px; background:#2a2a2a; display:inline-block; }
+  .dock i.on { background:url('onme-icon.png') center/cover; border-radius:18px; box-shadow:0 0 0 3px rgba(255,255,255,.18); }
+  .dock i.on::after { content:''; display:block; width:56px; height:5px; border-radius:3px; background:#f5a623; margin:84px auto 0; }
+  canvas { position:absolute; left:0; top:0; height:100%; image-rendering:auto; }
+  .ui { position:absolute; inset:0; padding:44px 56px; box-sizing:border-box; }
+  .mark { position:absolute; top:44px; left:56px; display:flex; align-items:baseline; gap:10px; }
+  .mark b { font-size:30px; color:var(--brand); letter-spacing:-0.5px; }
+  .mark span { font-size:14px; color:var(--sub); letter-spacing:3px; }
+  .center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .greet { font-size:22px; color:var(--sub); }
+  h1 { margin:10px 0 56px; font-size:46px; font-weight:600; letter-spacing:-1px; color:var(--ink); }
+  .row { display:flex; gap:28px; }
+  .card { width:224px; height:268px; border-radius:32px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+          position:relative; cursor:pointer; user-select:none;
+          
+          backdrop-filter:blur(26px) saturate(150%); -webkit-backdrop-filter:blur(26px) saturate(150%);
+          background:linear-gradient(150deg, rgba(255,255,255,.58) 0%, rgba(255,255,255,.26) 55%, rgba(255,255,255,.16) 100%);
+          box-shadow:inset 0 2px 1px rgba(255,255,255,.9), inset 0 -18px 36px rgba(157,213,189,.18), 0 24px 48px -16px rgba(22,48,42,.16);
+          overflow:hidden; transition:transform 160ms cubic-bezier(.23,1,.32,1); }
+  
+  .card::after { content:""; position:absolute; inset:-40% -60%; pointer-events:none;
+          background:linear-gradient(115deg, transparent 38%, rgba(255,255,255,.38) 46%, rgba(255,255,255,.08) 52%, transparent 60%); }
+  .card.quiet { background:linear-gradient(150deg, rgba(255,255,255,.34), rgba(255,255,255,.12)); }
+  .card > * { position:relative; z-index:1; }
+  
+  .card::before, .bead::after, .plus::after { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; pointer-events:none;
+          background:linear-gradient(rgba(255,255,255,.95), rgba(255,255,255,.15), rgba(63,128,105,.12));
+          -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+  .card:active { transform:scale(.97); }
+  .card:active::before { background:var(--brand); padding:2px; }
+  .label { margin-top:24px; font-size:24px; font-weight:500; color:var(--ink); }
+  .quiet .label { color:var(--sub); }
+  .bead, .plus { width:112px; height:112px; border-radius:50%; position:relative; display:flex; align-items:center; justify-content:center; }
+  .bead { font-size:46px; font-weight:600; color:var(--ink);
+          box-shadow:inset 0 -10px 22px rgba(255,255,255,.55), inset 0 6px 14px rgba(255,255,255,.35), 0 14px 26px -10px var(--shadow); }
+  
+  .bead::before { content:""; position:absolute; left:18px; top:10px; width:54px; height:34px; border-radius:50%; transform:rotate(-24deg);
+          background:radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%); }
+  .bead b { position:relative; font-weight:600; }
+  .plus { background:linear-gradient(rgba(255,255,255,.37), rgba(255,255,255,.2)); font-size:48px; font-weight:300; color:var(--sub); }
+  .note { position:absolute; bottom:44px; left:0; right:0; text-align:center; font-size:19px; color:var(--sub); }
+  .loading { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 240ms; }
+  .loading b { font-size:88px; color:var(--brand); letter-spacing:-1px; animation:in 400ms cubic-bezier(.23,1,.32,1) both; }
+  .loading span { font-size:22px; letter-spacing:10px; color:var(--sub); animation:in 400ms cubic-bezier(.23,1,.32,1) both; }
+  .loading i { margin-top:56px; width:120px; height:3px; border-radius:2px; background:rgba(157,213,189,.3); overflow:hidden; position:relative; }
+  .loading i::after { content:""; position:absolute; inset:0; width:40%; background:var(--brand); border-radius:2px; animation:bar 1s infinite cubic-bezier(.45,0,.55,1); }
+  @keyframes in { from { opacity:0; transform:scale(.95); } }
+  @keyframes bar { from { transform:translateX(-100%); } to { transform:translateX(250%); } }
+  .compact .row { gap:16px; } .compact .card { width:160px; height:210px; } .compact .bead, .compact .plus { width:84px; height:84px; }
+  .compact .bead { font-size:36px; } .compact .bead::before { left:13px; top:8px; width:40px; height:26px; } .compact h1 { font-size:40px; } .compact .label { font-size:20px; margin-top:16px; }
+  .instant * { transition:none !important; animation:none !important; }
+  .hidden { opacity:0; pointer-events:none; }
+  .tools { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); font:13px system-ui; color:#9ab; }
+  .tools button { font:inherit; background:#1b2e27; color:#eef7f3; border:0; border-radius:99px; padding:6px 12px; margin-left:6px; cursor:pointer; }
+</style>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<script src="icons.js" defer></script>
+<script src="app.js" defer></script>
+<div class="tools">
+  <button id="drive">정차 중 (물결 움직임)</button>
+  <button id="zoom">보기: 앱 크게</button>
+  <button id="win">창: 넓게</button>
+  <button id="voice">음성 안내 켜짐</button>
+  <button id="replay">로딩 다시 보기</button>
+</div>
+<div id="display">
+<div class="cluster">
+  <div class="top"><span>500 km</span><span>0 km/h</span><span class="prnd"><b>P</b>R N D</span></div>
+  <div class="car"></div>
+  <div class="media"><i></i>재생 중인 항목 없음</div>
+</div>
+<div class="status"><span class="me">운</span><span>12:00 오전</span></div>
+<div class="dock"><i></i><i></i><i></i><i></i><i class="on"></i></div>
+<div id="frame">
+  <canvas id="gl"></canvas>
+  <div class="loading" id="loading"><b>온미</b><span>ONME</span><i></i></div>
+  <div class="ui hidden" id="ui">
+    <div class="mark"><b>온미</b><span>ONME</span></div>
+    <div class="center">
+      <div class="greet" id="greet"></div>
+      <h1>누가 운전하나요?</h1>
+      <div class="row">
+        <div class="card"><div class="bead" style="--c:#BFE8D6"><b>나</b></div><div class="label">나</div></div>
+        <div class="card"><div class="bead" style="--c:#C9D9F0"><b>남</b></div><div class="label">남편</div></div>
+        <div class="card"><div class="bead" style="--c:#F5D6C8"><b>가</b></div><div class="label">가족</div></div>
+        <div class="card quiet" id="add"><div class="plus"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></div><div class="label">프로필 추가</div></div>
+      </div>
+    </div>
+    <div class="note" id="note">각 프로필의 기록은 이 차량에 따로 보관돼요</div>
+  </div>
+  <div class="home hidden" id="home"></div>
+</div>
+</div>
+<script>
+addEventListener("DOMContentLoaded", () => {
+document.querySelectorAll('.bead').forEach(b => {
+  const c = b.style.getPropertyValue('--c').trim();
+  const [r, g, bl] = [1, 3, 5].map(i => parseInt(c.substr(i, 2), 16));
+  const light = [r, g, bl].map(v => Math.round(v + (255 - v) * .75)), rim = [r * .86, g * .88, bl * .88].map(Math.round);
+  b.style.background = `radial-gradient(circle at 36% 30%, rgb(${light}) 0%, rgba(${r},${g},${bl},.92) 50%, rgb(${rim}) 100%)`;
+  b.style.setProperty('--shadow', `rgba(${rim},.55)`);
+});
+if (location.hash.startsWith('#home')) document.body.classList.add('instant');
+const h = new Date().getHours();
+document.getElementById('greet').textContent = h >= 5 && h <= 10 ? '좋은 아침이에요' : h <= 16 && h >= 11 ? '좋은 오후예요' : h >= 17 && h <= 21 ? '좋은 저녁이에요' : '편안한 밤이에요';
+document.getElementById('add').onclick = () => document.getElementById('note').textContent = '프로필은 휴대폰 앱에서 추가할 수 있어요 (준비 중)';
+const show = (on, off) => { document.getElementById(on).classList.remove('hidden'); document.getElementById(off).classList.add('hidden'); };
+document.querySelectorAll('.card:not(#add)').forEach((card, i) => card.onclick = () => { App.open(i); show('home', 'ui'); });
+window.onmeSwitch = () => { show('ui', 'home'); night = 0; };
+
+function showLoading() {
+  document.getElementById('home').classList.add('hidden'); night = 0;
+  const l = document.getElementById('loading'), ui = document.getElementById('ui');
+  l.classList.remove('hidden'); ui.classList.add('hidden');
+  l.replaceWith(l.cloneNode(true));
+  setTimeout(() => { document.getElementById('loading').classList.add('hidden'); ui.classList.remove('hidden'); if (location.hash.startsWith('#home')) {
+    const steps = location.hash.split('/').slice(1).map(x => x.split(':')), who = steps.find(([a]) => a === 'p');
+    document.querySelectorAll('.card')[who ? +who[1] : 0].click(); 
+    steps.forEach(([a, v]) => a === 'p' ? 0 : a === 'drive' || a === 'win' ? document.getElementById(a).click() : App.act(a, v)); } }, location.hash.startsWith('#home') ? 0 : 500);
+}
+document.getElementById('replay').onclick = showLoading;
+let voice = true;
+document.getElementById('voice').onclick = e => { voice = !voice; App.setVoice(voice); e.target.textContent = voice ? '음성 안내 켜짐' : '음성 안내 꺼짐'; };
+document.getElementById('win').onclick = e => {
+  narrow = !narrow; e.target.textContent = narrow ? '창: 한 칸' : '창: 넓게';
+  document.getElementById('frame').style.width = narrow ? '897px' : '1794px';
+  document.getElementById('frame').classList.toggle('compact', narrow);
+  sizeCanvas(narrow ? 841 : 1682, narrow ? 897 : 1794); App.setCompact(narrow); fit();
+};
+
+let moving = true;
+document.getElementById('drive').onclick = () => App.setDriving(moving);
+window.onmeMotion = m => { moving = m; document.getElementById('drive').textContent = m ? '정차 중 (물결 움직임)' : '주행 중 (정지 화면)'; };
+
+let zoomApp = true, narrow = false;
+const fit = () => {
+  const r = zoomApp ? { x: 853, y: 90, w: narrow ? 841 : 1682, h: 1210 } : { x: 0, y: 0, w: 2560, h: 1440 };
+  const vw = innerWidth, vh = innerHeight - 64, s = Math.min(vw / r.w, vh / r.h) * .97, d = document.getElementById('display');
+  Object.assign(d.style, { position: 'absolute', transformOrigin: '0 0', transform: `scale(${s})`, left: `${(vw - r.w * s) / 2 - r.x * s}px`, top: `${(vh - r.h * s) / 2 - r.y * s}px` });
+};
+document.getElementById('zoom').onclick = e => { zoomApp = !zoomApp; e.target.textContent = zoomApp ? '보기: 앱 크게' : '보기: 차량 전체'; fit(); };
+addEventListener('resize', fit); fit();
+const cv = document.getElementById('gl'), gl = cv.getContext('webgl');
+const sizeCanvas = (w, css) => { cv.width = w / 2; cv.height = 605; cv.style.width = css + 'px'; };
+sizeCanvas(1682, 1794);
+const fs = `precision highp float;
+uniform float night;
+uniform vec2 res;
+uniform float t;
+uniform float wash;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+vec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+float noise(vec2 p) {
+    vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) { return 0.55 * noise(p) + 0.3 * noise(p * 2.07 + 5.3) + 0.15 * noise(p * 4.13 + 1.7); }
+float lift(vec2 p, float tt) {
+    vec2 c = vec2(res.x / res.y * 0.5, 0.5);
+    float r = length(p - c);
+    return fbm(p * 3.2 + vec2(tt, -tt * 0.7)) * 0.9 - 0.85 * exp(-r * r / 0.035) + 0.25 * smoothstep(0.1, 0.45, r);
+}
+void main() {
+    vec2 frag = vec2(gl_FragCoord.x, res.y - gl_FragCoord.y);
+    vec2 p = frag / res.y;
+    vec2 c = vec2(res.x / res.y * 0.5, 0.5);
+    vec2 v = p - c;
+    float r = length(v);
+    float tt = t * 0.035;
+    float sw = 0.55 + (fbm(p * 2.2 + tt) - 0.5) * 1.6 + 0.08 * sin(t * 0.6 + r * 9.0);
+    vec2 rad = v / max(r, 0.001);
+    vec2 dir = vec2(rad.x * cos(sw) - rad.y * sin(sw), rad.x * sin(sw) + rad.y * cos(sw));
+    float h = lift(p, tt);
+    float e = 0.004;
+    float hx = lift(p + vec2(e, 0.0), tt) - h;
+    float hy = lift(p + vec2(0.0, e), tt) - h;
+    vec3 n = normalize(vec3(-hx / e * 0.075, -hy / e * 0.075, 1.0));
+    vec3 L = normalize(vec3(-0.35, -0.6, 0.72));
+    float diff = clamp(dot(n, L), 0.0, 1.0);
+    vec2 q = p * 230.0;
+    float s = 0.0;
+    for (int k = -6; k <= 6; k++) { s += noise(q + dir * float(k) * 1.1); }
+    s /= 13.0;
+    vec2 q2 = p * 120.0 + 31.0;
+    float s2 = 0.0;
+    for (int k = -4; k <= 4; k++) { s2 += noise(q2 + dir * float(k) * 1.3); }
+    s2 /= 9.0;
+    float hair = smoothstep(0.32, 0.68, s) * 0.55 + smoothstep(0.3, 0.7, s2) * 0.45;
+    vec3 T = normalize(vec3(dir, 0.6));
+    vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
+    float th = dot(T, H);
+    float sheen = pow(sqrt(max(0.0, 1.0 - th * th)), 24.0);
+    float dimple = exp(-r * r / 0.02);
+    float lum = (0.38 + 0.75 * diff) * (0.80 + 0.30 * hair * (0.6 + 0.6 * diff)) - 0.45 * dimple;
+    vec3 shadow = vec3(0.30, 0.55, 0.47);
+    vec3 mid = vec3(0.66, 0.85, 0.77);
+    vec3 light = vec3(0.93, 0.98, 0.96);
+    vec3 col = mix(shadow, mid, smoothstep(0.35, 0.8, lum));
+    col = mix(col, light, smoothstep(0.8, 1.15, lum));
+    col += sheen * 0.10 * hair;
+    col = mix(col, vec3(1.0, 1.0, 1.0), wash);
+    gl_FragColor = vec4(col, 1.0);
+}
+`;
+const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; };
+const pr = gl.createProgram();
+gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 a; void main(){ gl_Position = vec4(a,0.0,1.0); }'));
+gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs));
+gl.linkProgram(pr); gl.useProgram(pr);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(pr, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+const uWash = gl.getUniformLocation(pr, 'wash'), uRes = gl.getUniformLocation(pr, 'res'), uT = gl.getUniformLocation(pr, 't'), uN = gl.getUniformLocation(pr, 'night');
+let night = 0, nightNow = 0;
+let t = 12, last = performance.now();
+let lastDraw = 0;
+(function frame(now) {
+  if (moving) t += (now - last) / 1000; last = now;
+  if (now - lastDraw < 32) return requestAnimationFrame(frame);
+  lastDraw = now;
+  gl.viewport(0, 0, cv.width, cv.height); gl.uniform2f(uRes, cv.width, cv.height); gl.uniform1f(uT, t); gl.uniform1f(uWash, 0.0);
+  nightNow += (night - nightNow) * .06; gl.uniform1f(uN, nightNow);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  requestAnimationFrame(frame);
+})(last);
+showLoading();
+});
+</script>
+</body>
+</html>
