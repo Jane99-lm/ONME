@@ -99,7 +99,6 @@ private fun AppShell(o: Onme) {
     val end = if (c) 32.dp else 56.dp
     LaunchedEffect(o.blocked) { if (o.blocked) { o.message = Copy.PARK_FIRST; o.blocked = false } }
     Box(Modifier.fillMaxSize()) {
-        if (o.screen == Screen.CONFIRM) CycleModel(cycleModelUrl(o.user, o.today()), restricted = !o.parked, Modifier.fillMaxSize())
         Rail(o, Modifier.padding(start = if (c) 16.dp else 32.dp, top = 32.dp, bottom = if (o.demo) bottom - 12.dp else 32.dp))
         AnimatedContent(
             targetState = o.screen,
@@ -634,6 +633,7 @@ private fun ColumnScope.Confirm(o: Onme) {
     val running = o.applied || care !in VEHICLE_CARES
     Head(o, Copy.CARE_NAME.getValue(care))
     Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Bottom)) {
+        BearOrb(animate = o.parked, modifier = Modifier.weight(1f))
         if (o.applied) Row(Modifier.height(40.dp).clip(CircleShape).background(Point).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             Glyph(Ic.CHECK, Bg, 18.dp); Spacer(Modifier.width(8.dp)); Text(Copy.APPLIED, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Bg)
         }
