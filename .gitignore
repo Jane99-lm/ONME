@@ -9,3 +9,5 @@ local.properties
 data/skills/
 skills/
 skills-lock.json
+app/src/main/assets/onme/index.html
+design/cycle/index.html
