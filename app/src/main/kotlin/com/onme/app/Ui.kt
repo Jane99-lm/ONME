@@ -415,12 +415,12 @@ private fun Rail(o: Onme, modifier: Modifier) {
 private fun RailItem(icon: AnimIcon, label: String, on: Boolean, onClick: () -> Unit) {
     val c = compact
     Column(
-        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Point.copy(alpha = 0.14f) else Color.Transparent).border(if (on) 2.dp else 1.5.dp, if (on) Accent else Accent.copy(alpha = 0.32f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
+        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Deep else Color.Transparent).border(1.5.dp, if (on) Deep else Accent.copy(alpha = 0.32f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) {
-        Glyph(icon, Accent, if (c) 26.dp else 30.dp, play = on)
+        Glyph(icon, if (on) Color.White else Accent, if (c) 26.dp else 30.dp, play = on)
         Spacer(Modifier.height(if (c) 4.dp else 8.dp))
-        Text(label, fontSize = if (c) 18.sp else 19.sp, fontWeight = FontWeight.Medium, color = if (on) MainText else SubText)
+        Text(label, fontSize = if (c) 18.sp else 19.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium, color = if (on) Color.White else SubText)
     }
 }
 
