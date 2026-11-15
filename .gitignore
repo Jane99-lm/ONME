@@ -6,3 +6,6 @@ local.properties
 .claude/
 *.iml
 .DS_Store
+data/skills/
+skills/
+skills-lock.json
