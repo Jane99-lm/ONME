@@ -139,7 +139,7 @@ class Onme(private val context: Context) {
 
     fun start(care: CareId) {
         choose(care)
-        if (care == CareId.COMFORT || care == CareId.QUIET || care == CareId.REPLAY) confirm()
+        if (care == CareId.COMFORT || care == CareId.QUIET || care == CareId.REPLAY || care == CareId.REST) confirm()
     }
 
     fun preview(care: CareId) = buildCareAction(care, mood ?: MoodId.M03, goal ?: GoalId.G03, user, ctx(), cabin.value)

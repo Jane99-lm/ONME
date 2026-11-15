@@ -206,44 +206,20 @@ fun ColumnScope.Timer(o: Onme) {
     val inBreath = ((o.timerMinutes * 60 - left) % 10) < 4
     LaunchedEffect(inBreath) { if (o.timerMinutes <= OnmeConfig.RESET_MINUTES_LONG) o.say(if (inBreath) "들이쉬어요" else "천천히 내쉬어요") }
     Head(o, if (reset) "잠깐 휴식" else "쉬어가기")
-    Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(36.dp, Alignment.CenterVertically)) {
-        Box(Modifier.size(420.dp), contentAlignment = Alignment.Center) {
-            val wobble by breath.animateFloat(0f, (Math.PI * 2).toFloat(), infiniteRepeatable(tween(12_000, easing = LinearEasing)), label = "w")
-            BreathBlob(k, wobble, Modifier.fillMaxSize())
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("%d:%02d".format(left / 60, left % 60), fontSize = 72.sp, fontWeight = FontWeight.SemiBold)
-                if (reset) Text(if (inBreath) "들이쉬어요" else "천천히 내쉬어요", fontSize = 28.sp, color = Accent)
-            }
+    Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically)) {
+        val calm = android.provider.Settings.Global.getFloat(androidx.compose.ui.platform.LocalContext.current.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+        val rise = if (calm) 0f else (k - 0.62f) / 0.38f
+        BearOrb(animate = true, tone = orbTone(o), modifier = Modifier.weight(1f).graphicsLayer {
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+            scaleX = 1f + 0.025f * rise; scaleY = 1f + 0.055f * rise
+        })
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("%d:%02d".format(left / 60, left % 60), fontSize = 72.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.5).sp)
+            if (reset) Text(if (inBreath) "들이쉬어요" else "천천히 내쉬어요", fontSize = 28.sp, color = Deep)
         }
         Text(if (reset) Copy.RESET_GUIDE else Copy.REST_PARKED, fontSize = 22.sp, color = SubText)
-        if (reset) Seg(listOf(OnmeConfig.RESET_MINUTES to "${OnmeConfig.RESET_MINUTES}분", OnmeConfig.RESET_MINUTES_LONG to "${OnmeConfig.RESET_MINUTES_LONG}분"), o.timerMinutes) { o.timerMinutes = it }
         Btn("닫기", kind = Kind.Quiet) { o.timerDone() }
     }
-}
-
-@Composable
-private fun BreathBlob(k: Float, w: Float, modifier: Modifier) = androidx.compose.foundation.Canvas(modifier) {
-    val c = center
-    val r0 = size.minDimension * 0.42f * k
-    fun blob(r: Float, phase: Float) = androidx.compose.ui.graphics.Path().apply {
-        val n = 96
-        for (i in 0..n) {
-            val a = (i.toFloat() / n) * (Math.PI * 2).toFloat()
-            val rr = r * (1f + 0.035f * kotlin.math.sin(3 * a + w + phase) + 0.022f * kotlin.math.sin(5 * a - 1.3f * w + phase) + 0.012f * kotlin.math.sin(2 * a + 0.7f * w))
-            val x = c.x + rr * kotlin.math.cos(a); val y = c.y + rr * kotlin.math.sin(a)
-            if (i == 0) moveTo(x, y) else lineTo(x, y)
-        }
-        close()
-    }
-    drawCircle(Brush.radialGradient(listOf(Point.copy(alpha = 0.35f), Color.Transparent), c, r0 * 1.45f), r0 * 1.45f)
-    drawPath(blob(r0 * 1.08f, 1.7f), Brush.radialGradient(listOf(Point.copy(alpha = 0.22f), Mint.copy(alpha = 0.10f)), c, r0 * 1.1f))
-    drawOval(Brush.radialGradient(listOf(MainText.copy(alpha = 0.14f), Color.Transparent), Offset(c.x, c.y + r0 * 1.02f), r0 * 0.7f), Offset(c.x - r0 * 0.7f, c.y + r0 * 0.88f), Size(r0 * 1.4f, r0 * 0.28f))
-    val body = blob(r0, 0f)
-    drawPath(body, Brush.radialGradient(0f to Color.White, 0.35f to Color(0xFFDDF3EA), 0.75f to Point, 1f to Mint, center = Offset(c.x - r0 * 0.28f, c.y - r0 * 0.32f), radius = r0 * 1.45f))
-    drawPath(body, Brush.radialGradient(0.55f to Color.Transparent, 1f to Accent.copy(alpha = 0.22f), center = Offset(c.x + r0 * 0.15f, c.y + r0 * 0.2f), radius = r0 * 1.15f))
-    drawPath(body, Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.1f)), c.y - r0, c.y + r0), style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
-    drawOval(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.85f), Color.Transparent), Offset(c.x - r0 * 0.38f, c.y - r0 * 0.48f), r0 * 0.34f),
-        Offset(c.x - r0 * 0.72f, c.y - r0 * 0.68f), Size(r0 * 0.68f, r0 * 0.40f))
 }
 
 @Composable
@@ -359,8 +335,8 @@ private fun CycleDial(f: CycleForecast?, last: LocalDate?, mu: Int, day: Int, mo
         arc(mu - 6f, 6f, Mint.copy(alpha = 0.45f))
         val rs = java.time.temporal.ChronoUnit.DAYS.between(last, f.rangeStart).toFloat()
         val re = java.time.temporal.ChronoUnit.DAYS.between(last, f.rangeEnd).toFloat()
-        arc(rs, re - rs + 1f, Crimson.copy(alpha = 0.35f), sw * 0.28f)
-        arc(0f, f.periodDays.toFloat(), Crimson.copy(alpha = 0.8f))
+        arc(rs, re - rs + 1f, PeriodPastel.copy(alpha = 0.6f), sw * 0.28f)
+        arc(0f, f.periodDays.toFloat(), PeriodPastel)
     }
     val a = Math.toRadians(-90.0 + (((day % mu) + mu) % mu) * 360.0 / mu)
     val m = Offset(cen.x + r * kotlin.math.cos(a).toFloat(), cen.y + r * kotlin.math.sin(a).toFloat())
@@ -413,7 +389,7 @@ private fun MonthCard(u: UserData, f: CycleForecast?, today: LocalDate, month: Y
         }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(if (c) 16.dp else 24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Legend(Crimson.copy(alpha = 0.85f), "생리"); Legend(Crimson.copy(alpha = 0.16f), "예상 생리"); Legend(null, "생리 전"); Legend(Mint.copy(alpha = 0.3f), "예정 범위")
+            Legend(PeriodPastel, "생리"); Legend(PeriodPastelLight, "예상 생리"); Legend(null, "생리 전"); Legend(Mint.copy(alpha = 0.3f), "예정 범위")
             if (u.familyPlanning) Legend(Accent.copy(alpha = 0.32f), "배란 추정")
         }
     }
@@ -439,7 +415,7 @@ private fun bandOf(day: LocalDate, u: UserData, f: CycleForecast?, today: LocalD
     }
 }
 
-private fun bandColor(b: Band) = when (b) { Band.PERIOD -> Crimson.copy(alpha = 0.16f); Band.PREDICTED -> Crimson.copy(alpha = 0.08f); Band.RANGE -> Mint.copy(alpha = 0.22f) }
+private fun bandColor(b: Band) = when (b) { Band.PERIOD -> PeriodPastelLight; Band.PREDICTED -> PeriodPastelLight.copy(alpha = 0.6f); Band.RANGE -> Mint.copy(alpha = 0.22f) }
 
 @Composable
 private fun DayCell(day: LocalDate?, u: UserData, f: CycleForecast?, today: LocalDate, modifier: Modifier, dot: androidx.compose.ui.unit.Dp) {
@@ -457,10 +433,10 @@ private fun DayCell(day: LocalDate?, u: UserData, f: CycleForecast?, today: Loca
         if (joinR) drawRect(col, Offset(center.x, top), Size(size.width - center.x, h))
         if (!joinL || !joinR) drawCircle(col, h / 2, center)
     }, contentAlignment = Alignment.Center) {
-        val fill = when { period -> Crimson.copy(alpha = 0.85f); ph?.first == Phase.P3 && u.familyPlanning -> Ovulation.copy(alpha = 0.25f); else -> Color.Transparent }
-        Box(Modifier.size(dot).clip(CircleShape).background(fill).then(if (isToday) Modifier.border(2.5.dp, if (period) Color.White else MainText, CircleShape) else Modifier), contentAlignment = Alignment.Center) {
+        val fill = when { period -> PeriodPastel; ph?.first == Phase.P3 && u.familyPlanning -> Ovulation.copy(alpha = 0.25f); else -> Color.Transparent }
+        Box(Modifier.size(dot).clip(CircleShape).background(fill).then(if (isToday) Modifier.border(2.5.dp, if (period) CrimsonInk else MainText, CircleShape) else Modifier), contentAlignment = Alignment.Center) {
             Text("${day.dayOfMonth}", fontSize = if (compact) 20.sp else 24.sp, fontWeight = if (period || isToday) FontWeight.Bold else FontWeight.Medium,
-                color = when { period -> Color.White; band == Band.PREDICTED -> Crimson; else -> MainText })
+                color = when { period || band == Band.PREDICTED -> CrimsonInk; else -> MainText })
             if (ph?.first == Phase.P5) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 7.dp).size(6.dp).background(Accent, CircleShape))
         }
         if (isToday) Text("오늘", Modifier.align(Alignment.BottomCenter), fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -511,8 +487,8 @@ fun ColumnScope.Record(o: Onme) {
 private fun PeriodStat(day: Int?, modifier: Modifier) {
     val on = day != null
     Column(
-        modifier.clip(R32).background(if (on) Brush.verticalGradient(listOf(Color(0xFFFBE6E9), Color(0xFFF6D6DB))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.6f))))
-            .border(1.5.dp, if (on) Crimson.copy(alpha = 0.3f) else MainText.copy(alpha = 0.06f), R32).padding(horizontal = 28.dp, vertical = 24.dp),
+        modifier.clip(R32).background(if (on) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.95f), Color(0xFFFFF5F6))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0.6f))))
+            .border(1.5.dp, if (on) Crimson.copy(alpha = 0.2f) else MainText.copy(alpha = 0.06f), R32).padding(horizontal = 28.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         Text("생리", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = if (on) CrimsonInk else SubText)

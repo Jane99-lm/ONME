@@ -402,7 +402,7 @@ private fun Rail(o: Onme, modifier: Modifier) {
 private fun RailItem(icon: AnimIcon, label: String, on: Boolean, onClick: () -> Unit) {
     val c = compact
     Column(
-        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Point.copy(alpha = 0.55f) else Color.Transparent).border(1.5.dp, if (on) Accent.copy(alpha = 0.6f) else Accent.copy(alpha = 0.32f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
+        Modifier.tap(onClick).size(width = if (c) 80.dp else 112.dp, height = if (c) 88.dp else 104.dp).clip(RoundedCornerShape(if (c) 24.dp else 30.dp)).background(if (on) Point.copy(alpha = 0.55f) else Color.Transparent).border(if (on) 1.5.dp else 1.dp, if (on) Accent.copy(alpha = 0.6f) else Accent.copy(alpha = 0.35f), RoundedCornerShape(if (c) 24.dp else 30.dp)),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
     ) {
         Glyph(icon, if (on) Deep else Accent, if (c) 26.dp else 30.dp, play = on)
@@ -554,10 +554,10 @@ private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: S
     val tags = if (notice != null) listOf("안전 우선") else listOfNotNull("${moodLabel(mood)}일 때", "${Copy.GOAL.getValue(goal)}에 좋아요", "지난번 좋았어요".takeIf { liked }, "정차 중에만".takeIf { care == CareId.RESET })
     val dets = if (notice != null) listOf(notice) else details(o, care)
     val action = Copy.BUTTONS.getValue(care).first
-    val tone = if (notice != null) Color(0xFFE9A9AD) else Point
+    val tone = Point
     @Composable fun Head(m: Modifier) = Column(m, verticalArrangement = Arrangement.spacedBy(if (c) 14.dp else 20.dp, if (c) Alignment.Top else Alignment.CenterVertically)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(10.dp).background(if (notice != null) tone else Accent, CircleShape))
+            Box(Modifier.size(10.dp).background(Accent, CircleShape))
             Spacer(Modifier.width(10.dp))
             Text(if (notice != null) "먼저 쉬어가요" else "지금 가장 잘 맞아요", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Deep)
         }
@@ -581,7 +581,7 @@ private fun TopPick(o: Onme, care: CareId, mood: MoodId, goal: GoalId, notice: S
         Btn(action, Modifier.fillMaxWidth(), height = 96.dp) { o.start(care) }
     }
     Box(modifier.clip(R40).background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.85f), tone.copy(alpha = 0.28f)), Offset.Zero, Offset.Infinite))
-        .border(1.5.dp, Brush.linearGradient(listOf(Color.White, tone.copy(alpha = 0.5f)), Offset.Zero, Offset.Infinite), R40)) {
+        .border(1.5.dp, Accent.copy(alpha = 0.7f), R40)) {
         if (c) Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
             Head(Modifier.fillMaxWidth())
             Plan(Modifier.fillMaxWidth().weight(1f))
@@ -665,11 +665,7 @@ private fun ColumnScope.Confirm(o: Onme) {
     val running = o.applied || care !in VEHICLE_CARES
     Head(o, Copy.CARE_NAME.getValue(care))
     Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Bottom)) {
-        BearOrb(animate = o.parked, tone = when (phaseOn(o.user, o.today())?.first) {
-            com.onme.core.Phase.P1 -> OrbTone.CRIMSON
-            com.onme.core.Phase.P3 -> if (o.user.familyPlanning) OrbTone.BLUE else OrbTone.JADE
-            else -> OrbTone.JADE
-        }, modifier = Modifier.weight(1f))
+        BearOrb(animate = o.parked, tone = orbTone(o), modifier = Modifier.weight(1f))
         if (o.applied) Row(Modifier.height(40.dp).clip(CircleShape).background(Point).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
             Glyph(Ic.CHECK, Bg, 18.dp); Spacer(Modifier.width(8.dp)); Text(Copy.APPLIED, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, color = Bg)
         }
@@ -691,6 +687,12 @@ private fun ColumnScope.Confirm(o: Onme) {
         info(Modifier.weight(1f).fillMaxHeight())
         ActionCard(o, a, Modifier.width(360.dp).fillMaxHeight())
     }
+}
+
+fun orbTone(o: Onme) = when (phaseOn(o.user, o.today())?.first) {
+    com.onme.core.Phase.P1 -> OrbTone.CRIMSON
+    com.onme.core.Phase.P3 -> if (o.user.familyPlanning) OrbTone.BLUE else OrbTone.JADE
+    else -> OrbTone.JADE
 }
 
 private val VEHICLE_CARES = setOf(CareId.COMFORT, CareId.QUIET, CareId.REPLAY)
@@ -719,7 +721,9 @@ private fun ActionCard(o: Onme, a: CareAction, modifier: Modifier) {
                 Btn(if (o.parked) "10분 쉬기" else yes, Modifier.fillMaxWidth(), height = 84.dp) { o.confirm() }
             }
             CareId.RESET -> {
-                Btn(yes, Modifier.fillMaxWidth(), height = 84.dp) { o.confirm() }
+                var mins by remember { mutableIntStateOf(a.minutes ?: OnmeConfig.RESET_MINUTES) }
+                Seg(listOf(OnmeConfig.RESET_MINUTES to "${OnmeConfig.RESET_MINUTES}분", OnmeConfig.RESET_MINUTES_LONG to "${OnmeConfig.RESET_MINUTES_LONG}분"), mins) { mins = it }
+                Btn(yes, Modifier.fillMaxWidth(), height = 84.dp) { o.confirm(); o.timerMinutes = mins }
                 Btn(no, Modifier.fillMaxWidth(), Kind.Quiet, height = 72.dp) { o.go(Screen.HOME) }
             }
         }
@@ -770,7 +774,7 @@ private fun ColumnScope.Sos(o: Onme) {
 @Composable
 private fun SosSearching(o: Onme) {
     val c = compact
-    val move = o.parked
+    val move = o.parked && android.provider.Settings.Global.getFloat(androidx.compose.ui.platform.LocalContext.current.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
     val pulse = rememberInfiniteTransition(label = "radar")
     val t by pulse.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, easing = LinearEasing)), label = "t")
     val what = SosCopy.CATEGORY.getValue(o.sosCat ?: SosCategory.TOILET)
@@ -782,12 +786,12 @@ private fun SosSearching(o: Onme) {
     )
     BackHandler { o.cancelSos() }
     Column(
-        Modifier.fillMaxSize().background(Color.White).clickable(remember { MutableInteractionSource() }, null) {}.padding(vertical = if (c) 40.dp else 56.dp),
+        Modifier.fillMaxSize().background(JadeGround).clickable(remember { MutableInteractionSource() }, null) {}.padding(vertical = if (c) 40.dp else 64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("가까운 ${what}을 찾고 있어요", fontSize = if (c) 36.sp else 44.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp)
+        Text("가까운 ${what}을 찾고 있어요", fontSize = if (c) 44.sp else 60.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp)
         Spacer(Modifier.height(8.dp))
-        Text("위치는 찾을 때만 쓰고 저장하지 않아요", fontSize = 20.sp, color = SubText)
+        Text("위치는 찾을 때만 쓰고 저장하지 않아요", fontSize = 24.sp, color = SubText)
         Box(Modifier.weight(1f).fillMaxWidth().drawBehind {
             val max = size.minDimension / 2 * 0.95f
             for (i in 0 until 4) {
@@ -797,25 +801,25 @@ private fun SosSearching(o: Onme) {
             drawCircle(Point.copy(alpha = 0.16f), radius = max * 0.32f)
             drawCircle(Point.copy(alpha = 0.22f), radius = max * 0.2f)
         }, contentAlignment = Alignment.Center) {
-            Box(Modifier.size(if (c) 88.dp else 104.dp).background(Brush.radialGradient(listOf(Color.White, Point, Mint)), CircleShape).border(1.dp, Accent.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
-                Glyph(Ic.CARE.getValue(CareId.PLACE), Bg, if (c) 40.dp else 48.dp, play = r)
+            Box(Modifier.size(if (c) 120.dp else 156.dp).background(Brush.radialGradient(listOf(Color.White, Point, Mint)), CircleShape).border(1.dp, Accent.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
+                Glyph(Ic.CARE.getValue(CareId.PLACE), Bg, if (c) 56.dp else 72.dp, play = r)
             }
         }
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
             steps.forEachIndexed { i, (label, done) ->
                 val active = !done && (i == 0 && r == null || i == 1 && r != null)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(36.dp).background(if (done) Point else if (active) Point.copy(alpha = 0.25f) else MainText.copy(alpha = 0.06f), CircleShape), contentAlignment = Alignment.Center) {
-                        if (done) Glyph(Ic.CHECK, Bg, 20.dp, play = true)
+                    Box(Modifier.size(48.dp).background(if (done) Point else if (active) Point.copy(alpha = 0.25f) else MainText.copy(alpha = 0.06f), CircleShape), contentAlignment = Alignment.Center) {
+                        if (done) Glyph(Ic.CHECK, Bg, 26.dp, play = true)
                         else if (active) Box(Modifier.size(10.dp).graphicsLayer { val k = if (move) 0.7f + 0.6f * kotlin.math.abs(kotlin.math.sin(t * 2f * Math.PI.toFloat())) else 1f; scaleX = k; scaleY = k }.background(Accent, CircleShape))
                     }
                     Spacer(Modifier.width(16.dp))
-                    Text(label, fontSize = 24.sp, fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal, color = if (done || active) MainText else SubText)
+                    Text(label, fontSize = 30.sp, fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal, color = if (done || active) MainText else SubText)
                 }
             }
         }
         Spacer(Modifier.height(if (c) 28.dp else 36.dp))
-        Btn("취소", Modifier.widthIn(min = 240.dp), Kind.Quiet, height = 72.dp) { o.cancelSos() }
+        Btn("취소", Modifier.widthIn(min = 300.dp), Kind.Quiet, height = 88.dp) { o.cancelSos() }
     }
 }
 
@@ -849,8 +853,7 @@ private fun Loading() {
         Modifier.fillMaxSize().graphicsLayer { alpha = t.value; val s = 0.95f + 0.05f * t.value; scaleX = s; scaleY = s },
         verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("온미", fontSize = 88.sp, fontWeight = FontWeight.Bold, color = Accent, letterSpacing = (-1).sp)
-        Text("ONME", fontSize = 22.sp, letterSpacing = 10.sp, color = SubText)
+        Text("on me", fontSize = 88.sp, fontWeight = FontWeight.Bold, color = Accent, letterSpacing = (-1).sp)
         Spacer(Modifier.height(56.dp))
         LinearProgressIndicator(Modifier.width(120.dp).height(3.dp).clip(CircleShape), color = Accent, trackColor = Point.copy(alpha = 0.3f))
     }
@@ -873,9 +876,7 @@ private fun ProfilePick(o: Onme) {
     val hour = remember { java.time.LocalTime.now().hour }
     Box(Modifier.fillMaxSize().padding(horizontal = 56.dp, vertical = 44.dp)) {
         Row(Modifier.align(Alignment.TopStart), verticalAlignment = Alignment.Bottom) {
-            Text("온미", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Accent, letterSpacing = (-0.5).sp)
-            Spacer(Modifier.width(10.dp))
-            Text("ONME", fontSize = 14.sp, letterSpacing = 3.sp, color = SubText, modifier = Modifier.padding(bottom = 5.dp))
+            Text("on me", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Accent, letterSpacing = (-0.5).sp)
         }
         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(greeting(hour), fontSize = 22.sp, color = SubText)
