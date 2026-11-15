@@ -363,7 +363,7 @@ private fun Rail(o: Onme, modifier: Modifier) {
     val c = compact
     val cell = if (c) 80.dp else 112.dp
     Column(
-        modifier.width(if (c) 96.dp else 136.dp).fillMaxHeight().darkGlass(RoundedCornerShape(if (c) 36.dp else 44.dp)).border(1.5.dp, Accent.copy(alpha = 0.25f), RoundedCornerShape(if (c) 36.dp else 44.dp)).padding(vertical = 16.dp),
+        modifier.width(if (c) 96.dp else 136.dp).fillMaxHeight().darkGlass(RoundedCornerShape(if (c) 36.dp else 44.dp)).border(3.dp, Accent.copy(alpha = 0.75f), RoundedCornerShape(if (c) 36.dp else 44.dp)).padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Column(Modifier.tap { o.switchProfile() }.size(cell), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
